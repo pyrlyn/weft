@@ -30,6 +30,8 @@ export const DIAGNOSTIC_CODES = {
   W117: { severity: "error", summary: "Nesting deeper than the limit." },
   W118: { severity: "error", summary: "Misplaced or malformed `<slot>`." },
   W119: { severity: "error", summary: "Slot name used twice under one parent." },
+  W120: { severity: "error", summary: "Misplaced or malformed `<context>`." },
+  W121: { severity: "error", summary: "Misplaced or malformed `<entry>`." },
 
   W200: { severity: "error", summary: "Document does not have the canonical JSON shape." },
   W201: { severity: "error", summary: "Root element is not `screen`." },
@@ -59,6 +61,12 @@ export const DIAGNOSTIC_CODES = {
     summary: "Kind, attribute, event or slot name is invalid or reserved.",
   },
   W224: { severity: "error", summary: "Number outside the declared range or not whole." },
+  W227: {
+    severity: "error",
+    summary: "Context entry status missing or not allowed for its kind.",
+  },
+  W228: { severity: "mode", summary: "Context over a limit." },
+  W229: { severity: "error", summary: "Context entry text or author name not allowed." },
 
   W301: { severity: "error", summary: "Duplicate id." },
   W302: { severity: "error", summary: "Child kind not allowed here." },
