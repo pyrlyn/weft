@@ -32,6 +32,10 @@ Execution plan:
 
 Progress: steps 1–5 are done (repair cycle, summaries, `DEFAULT_MODELS`, results committed under `bench/results/`, trial row in `test.md`). `bench/EVALUATION.md` records those runs against the numeric bar and does not close the task. Remaining: step 6, the three-sample edit and read runs on the current harness, then a history row and a revision of the report. Step 8 waits on that.
 
+Scope change (creator's decision): the one model loaded in LM Studio, `prism-ml/bonsai-27b`, is enough, and no other model is downloaded. "Two or three models" becomes this one local model against the baselines; the Claude runs of step 3 and step 6 are no longer required to close the task. The numeric bar is unchanged: T8 closes only if Weft first-try validity is at least 95% and validity after one repair is at least 99%. If it is not met, `bench/EVALUATION.md` records the results and the continue/stop recommendation and T8 stays open.
+
+Execution plan for step 6 onward: `node bench/src/run.ts edit|read --provider openai --model prism-ml/bonsai-27b --samples 3` (all formats and baselines, run in the background); raw results and logs into `bench/results/`, one `test.md` History row per run in the same commit; revise `bench/EVALUATION.md` against the bar; `pnpm run ci` under the full-check lock; PR and rebase merge.
+
 ### T14. Figma round trip and plugin
 
 Convert Weft to Figma and back without loss, and ship a Figma plugin. Approved scope:
