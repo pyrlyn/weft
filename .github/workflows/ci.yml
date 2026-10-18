@@ -20,7 +20,8 @@ jobs:
     # bundle test compares bytes. Xcode 27 through pyrlyn/ci's setup-xcode —
     # the same pin every pyrlyn repo runs, so the build-tool plugin's verbose
     # output behaves as it does in development (Xcode 26.x hides it).
-    runs-on: xcode-27
+    # TEMP: self-hosted xcode-27-local until hosted xcode-27 exists (fork PRs keep the hosted label)
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'xcode-27-local' || 'xcode-27' }}
     steps:
       # Full history: moon's change detection diffs against the merge base and
       # a shallow checkout makes that fail (git exits 128 on the missing base).
