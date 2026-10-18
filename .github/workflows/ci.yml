@@ -14,13 +14,31 @@ permissions:
   contents: read
 
 jobs:
+  # Which runner the macOS jobs use: pyrlyn/ci's macos-runner action reads the MACOS_RUNNER
+  # variable (unset or `hosted` = the hosted label, `xcode-27-local` = the dedicated Mac;
+  # fork PRs keep the hosted label).
+  macos-runner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      value: ${{ steps.r.outputs.value }}
+    steps:
+      - id: r
+        uses: pyrlyn/ci/.github/actions/macos-runner@4b5b5470544893cd515b88c751e92728341c6daa # main
+        with:
+          runner: ${{ vars.MACOS_RUNNER }}
+          value: '["xcode-27"]'
+
   gate:
     # macOS, the environment the committed artifacts (the plugins' wasm-web
     # bundles) are built on: a linux runner builds byte-different wasm, and the
     # bundle test compares bytes. Xcode 27 through pyrlyn/ci's setup-xcode —
     # the same pin every pyrlyn repo runs, so the build-tool plugin's verbose
     # output behaves as it does in development (Xcode 26.x hides it).
-    runs-on: xcode-27
+    # Org variable MACOS_CI_DISABLED=true skips this macOS job.
+    if: vars.MACOS_CI_DISABLED != 'true'
+    needs: macos-runner
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(needs.macos-runner.outputs.value)[0] || 'xcode-27' }}
     steps:
       # Full history: moon's change detection diffs against the merge base and
       # a shallow checkout makes that fail (git exits 128 on the missing base).
@@ -30,7 +48,7 @@ jobs:
       - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
       # The workflow lint the pre-push hook (hk.pkl) runs; mise.toml pins jactionlint and shellcheck.
       - run: jactionlint --color
-      - uses: pyrlyn/ci/.github/actions/setup-xcode@9748fe1e5a2007d695e4e1a1d9b16492660dd8bc # main
+      - uses: pyrlyn/ci/.github/actions/setup-xcode@main
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install chromium
       # The gate in three steps, which together run exactly the documented
