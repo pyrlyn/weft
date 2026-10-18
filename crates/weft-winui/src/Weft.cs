@@ -3,12 +3,14 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Windows.System;
 
 namespace WeftNamespace;
@@ -95,6 +97,10 @@ public static class Props
     public static readonly DependencyProperty ErrorProperty = Weft.Marker("Error", typeof(Props));
     public static readonly DependencyProperty VariantProperty = Weft.Marker("Variant", typeof(Props));
     public static readonly DependencyProperty WrapProperty = Weft.Marker("Wrap", typeof(Props));
+    public static readonly DependencyProperty OrderedProperty = Weft.Marker("Ordered", typeof(Props));
+    public static readonly DependencyProperty SortProperty = Weft.Marker("Sort", typeof(Props));
+    public static readonly DependencyProperty SelectedProperty = Weft.Marker("Selected", typeof(Props));
+    public static readonly DependencyProperty ModalProperty = Weft.Marker("Modal", typeof(Props));
 
     public static object? GetState(DependencyObject o) => o.GetValue(StateProperty);
     public static void SetState(DependencyObject o, object? value) => o.SetValue(StateProperty, value);
@@ -104,6 +110,14 @@ public static class Props
     public static void SetVariant(DependencyObject o, object? value) => o.SetValue(VariantProperty, value);
     public static object? GetWrap(DependencyObject o) => o.GetValue(WrapProperty);
     public static void SetWrap(DependencyObject o, object? value) => o.SetValue(WrapProperty, value);
+    public static object? GetOrdered(DependencyObject o) => o.GetValue(OrderedProperty);
+    public static void SetOrdered(DependencyObject o, object? value) => o.SetValue(OrderedProperty, value);
+    public static object? GetSort(DependencyObject o) => o.GetValue(SortProperty);
+    public static void SetSort(DependencyObject o, object? value) => o.SetValue(SortProperty, value);
+    public static object? GetSelected(DependencyObject o) => o.GetValue(SelectedProperty);
+    public static void SetSelected(DependencyObject o, object? value) => o.SetValue(SelectedProperty, value);
+    public static object? GetModal(DependencyObject o) => o.GetValue(ModalProperty);
+    public static void SetModal(DependencyObject o, object? value) => o.SetValue(ModalProperty, value);
 }
 
 /// <summary>The name of the slot an element fills, which nothing else in the XAML states.</summary>
@@ -113,6 +127,74 @@ public static class Slot
 
     public static object? GetName(DependencyObject o) => o.GetValue(NameProperty);
     public static void SetName(DependencyObject o, object? value) => o.SetValue(NameProperty, value);
+}
+
+/// <summary>A dialog's <c>open</c>, two-way: true shows the dialog, false hides it, and a
+/// dismissal by the user writes false back and runs the dialog's <c>close</c>, which a dialog the
+/// view model hides does not.</summary>
+public static class Dialog
+{
+    public static readonly DependencyProperty IsOpenProperty = DependencyProperty.RegisterAttached(
+        "IsOpen", typeof(bool), typeof(Dialog), new PropertyMetadata(false, Changed));
+
+    private static readonly DependencyProperty HookedProperty =
+        DependencyProperty.RegisterAttached("Hooked", typeof(bool), typeof(Dialog), new PropertyMetadata(false));
+
+    public static bool GetIsOpen(DependencyObject o) => (bool)o.GetValue(IsOpenProperty);
+    public static void SetIsOpen(DependencyObject o, bool value) => o.SetValue(IsOpenProperty, value);
+
+    private static void Changed(DependencyObject o, DependencyPropertyChangedEventArgs e)
+    {
+        if (o is not ContentDialog dialog)
+        {
+            return;
+        }
+        if (!(bool)o.GetValue(HookedProperty))
+        {
+            o.SetValue(HookedProperty, true);
+            dialog.Closed += (_, _) =>
+            {
+                // Still open in the model: the user dismissed it.
+                if (GetIsOpen(dialog))
+                {
+                    SetIsOpen(dialog, false);
+                    On.Closed(dialog);
+                }
+            };
+        }
+        if (!(bool)e.NewValue)
+        {
+            dialog.Hide();
+        }
+        else if (dialog.XamlRoot is null)
+        {
+            // A dialog shows only once it has a XamlRoot, which it gets when the page loads.
+            dialog.Loaded += Show;
+        }
+        else
+        {
+            Show(dialog, null);
+        }
+    }
+
+    private static async void Show(object sender, RoutedEventArgs? _)
+    {
+        var dialog = (ContentDialog)sender;
+        dialog.Loaded -= Show;
+        if (!GetIsOpen(dialog))
+        {
+            return;
+        }
+        try
+        {
+            await dialog.ShowAsync();
+        }
+        catch (Exception)
+        {
+            // One dialog at a time: a second one stays closed, and the model says so.
+            SetIsOpen(dialog, false);
+        }
+    }
 }
 
 /// <summary>The events of the catalog as attached commands, such as
@@ -170,15 +252,52 @@ public static class On
             case PasswordBox password:
                 password.PasswordChanged += (_, _) => Edited(password);
                 break;
-            case ContentDialog dialog:
-                dialog.Closed += (_, _) => Fire(dialog, CloseProperty);
+            case ListViewItem item:
+                item.Loaded += (_, _) => Clicks(ItemsControl.ItemsControlFromItemContainer(item) as ListViewBase);
+                break;
+            case ContentDialog:
+                // Dialog.IsOpen runs close, so a dialog the view model hides runs none.
                 break;
             default:
-                // A form: Enter in one of its single-line fields submits it, even when the field
-                // handled the key itself.
+                // A table row presses on a tap. A form: Enter in one of its single-line fields
+                // submits it, even when the field handled the key itself.
+                element.Tapped += (_, _) => Fire(element, PressProperty);
                 element.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(Entered), true);
                 break;
         }
+    }
+
+    internal static void Closed(FrameworkElement dialog) => Fire(dialog, CloseProperty);
+
+    // A list reports a press of an item, by click or key, once its IsItemClickEnabled is on.
+    private static void Clicks(ListViewBase? list)
+    {
+        if (list is null || (bool)list.GetValue(HookedProperty))
+        {
+            return;
+        }
+        list.SetValue(HookedProperty, true);
+        list.IsItemClickEnabled = true;
+        list.ItemClick += (_, e) =>
+        {
+            // The clicked item is the ListViewItem itself, or the content it shows.
+            var item = e.ClickedItem as ListViewItem
+                ?? Ancestor(e.ClickedItem as DependencyObject)
+                ?? list.Items.OfType<ListViewItem>().FirstOrDefault(i => ReferenceEquals(i.Content, e.ClickedItem));
+            if (item is not null)
+            {
+                Fire(item, PressProperty);
+            }
+        };
+    }
+
+    private static ListViewItem? Ancestor(DependencyObject? o)
+    {
+        while (o is not null and not ListViewItem)
+        {
+            o = VisualTreeHelper.GetParent(o);
+        }
+        return o as ListViewItem;
     }
 
     // A value the view model writes into the control is not the user's change.

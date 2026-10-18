@@ -352,7 +352,7 @@ impl Reader<'_> {
                 None => {}
             }
             if name == "AutomationProperties.AutomationId"
-                || controls::expected(&node.kind, name)
+                || controls::expected(&node.kind, name, value)
                 || self.consumed.contains(&name)
                 || (name == "HorizontalAlignment" && value == "Stretch" && max_width)
             {

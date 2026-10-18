@@ -15,6 +15,8 @@ use crate::csharp::{self, command};
 use crate::data::{Data, Leaf, Read};
 use crate::xaml::{Element, boolean, literal, type_name};
 
+pub(crate) mod containers;
+
 /// The source comment's options start with this word; `import_winui` checks it.
 pub(crate) const TARGET: &str = "winui";
 
@@ -36,6 +38,8 @@ const KINDS: &[(&str, &str, &str)] = &[
     ("switch", "ToggleSwitch", "checked disabled"),
 ];
 const COMMON: &str = "label hidden state";
+/// The named slots of this slice's kinds; the containers add theirs.
+const SLOTS: &[(&str, &str)] = &[("form", "footer")];
 
 pub struct GenerateOptions<'a> {
     pub catalog: &'a Catalog,
@@ -144,6 +148,7 @@ pub fn generate(
         data: Data::default(),
         problems: vec![],
         forms: vec![],
+        columns: 0,
     };
     let panel = g.node(&expanded.root);
     let mut names = vec![];
@@ -210,6 +215,8 @@ struct Gen<'a> {
     problems: Vec<Unsupported>,
     /// The enclosing forms' submit commands, innermost last.
     forms: Vec<Option<String>>,
+    /// The columns of the enclosing table, which each of its rows lines up with.
+    columns: usize,
 }
 
 impl Gen<'_> {
@@ -328,7 +335,8 @@ impl Gen<'_> {
     }
 
     fn node(&mut self, node: &Node) -> Option<Element> {
-        let Some(&(kind, control, props)) = KINDS.iter().find(|k| k.0 == node.kind) else {
+        let mut all = KINDS.iter().chain(containers::KINDS);
+        let Some(&(kind, control, props)) = all.find(|k| k.0 == node.kind) else {
             self.later(node, &format!("`{}`", node.kind));
             return None;
         };
@@ -336,11 +344,11 @@ impl Gen<'_> {
         for prop in node.props.keys().filter(|p| !known(p)) {
             self.later(node, &format!("`{prop}`"));
         }
-        for slot in node
-            .slots
-            .keys()
-            .filter(|s| (kind, s.as_str()) != ("form", "footer"))
-        {
+        let drawn = |s: &&String| {
+            let mut all = SLOTS.iter().chain(containers::SLOTS);
+            all.any(|&(k, n)| (k, n) == (kind, s.as_str()))
+        };
+        for slot in node.slots.keys().filter(|s| !drawn(s)) {
             self.later(node, &format!("the `{slot}` slot"));
         }
         let password = kind == "field"
@@ -373,6 +381,7 @@ impl Gen<'_> {
             "heading" => self.heading(&mut e, node),
             "button" => self.button(&mut e, node),
             "field" => self.field(&mut e, node, password),
+            _ if containers::KINDS.iter().any(|k| k.0 == kind) => self.container(&mut e, node),
             _ => {
                 if let Some(v) = self.value(node, "checked", Leaf::Flag, true) {
                     e.attr(
@@ -388,7 +397,7 @@ impl Gen<'_> {
             }
         }
         let label = match kind {
-            "field" | "switch" => "Header",
+            "field" | "switch" | "tab" => "Header",
             "checkbox" => "Content",
             _ => "AutomationProperties.Name",
         };
@@ -414,10 +423,7 @@ impl Gen<'_> {
             self.children(&mut e, &node.children);
         }
         if let Some(footer) = node.slots.get("footer").filter(|_| kind == "form") {
-            let mut row = Element::new("StackPanel");
-            row.attr("Orientation", "Horizontal");
-            row.attr("weft:Slot.Name", "footer");
-            self.children(&mut row, footer);
+            let row = self.slot("footer", footer, true);
             e.children.push(row);
         }
         if kind == "form" {
@@ -429,17 +435,24 @@ impl Gen<'_> {
     fn stack(&mut self, e: &mut Element, node: &Node) {
         let row = self.word(node, "direction") == Some("row");
         e.attr("Orientation", if row { "Horizontal" } else { "Vertical" });
-        match node.props.get("gap") {
-            None => {}
-            Some(Value::Token(path)) => {
-                e.attr("Spacing", format!("{{StaticResource Weft.{path}}}"))
-            }
-            Some(_) => self.refuse(node, "a `gap` that is not a token"),
-        }
+        self.gap(e, node, &["Spacing"]);
         if self.word(node, "justify").is_some_and(|j| j != "start") {
             self.later(node, "`justify` other than `start`");
         }
         self.marker(e, node, "wrap", "Wrap");
+    }
+
+    /// A `gap` token as each of the panel's spacing properties.
+    fn gap(&mut self, e: &mut Element, node: &Node, attrs: &[&str]) {
+        match node.props.get("gap") {
+            None => {}
+            Some(Value::Token(path)) => {
+                for attr in attrs {
+                    e.attr(*attr, format!("{{StaticResource Weft.{path}}}"));
+                }
+            }
+            Some(_) => self.refuse(node, "a `gap` that is not a token"),
+        }
     }
 
     fn heading(&mut self, e: &mut Element, node: &Node) {
