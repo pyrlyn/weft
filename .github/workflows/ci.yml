@@ -14,6 +14,21 @@ permissions:
   contents: read
 
 jobs:
+  # Which runner the macOS jobs use: pyrlyn/ci's macos-runner action reads the MACOS_RUNNER
+  # variable (unset or `hosted` = the hosted label, `xcode-27-local` = the dedicated Mac;
+  # fork PRs keep the hosted label).
+  macos-runner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      value: ${{ steps.r.outputs.value }}
+    steps:
+      - id: r
+        uses: pyrlyn/ci/.github/actions/macos-runner@4b5b5470544893cd515b88c751e92728341c6daa # main
+        with:
+          runner: ${{ vars.MACOS_RUNNER }}
+          value: '["xcode-27"]'
+
   gate:
     # macOS, the environment the committed artifacts (the plugins' wasm-web
     # bundles) are built on: a linux runner builds byte-different wasm, and the
@@ -22,7 +37,8 @@ jobs:
     # output behaves as it does in development (Xcode 26.x hides it).
     # Org variable MACOS_CI_DISABLED=true skips this macOS job.
     if: vars.MACOS_CI_DISABLED != 'true'
-    runs-on: xcode-27
+    needs: macos-runner
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(needs.macos-runner.outputs.value)[0] || 'xcode-27' }}
     steps:
       # Full history: moon's change detection diffs against the merge base and
       # a shallow checkout makes that fail (git exits 128 on the missing base).
