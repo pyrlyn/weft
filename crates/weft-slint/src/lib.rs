@@ -5,6 +5,7 @@
 //! generated source with the Slint interpreter and fills it with sample data. The mapping is
 //! documented in this crate's README.
 
+mod canvas;
 mod data;
 mod generate;
 mod import;
@@ -16,8 +17,10 @@ mod read_expr;
 #[cfg(feature = "runtime")]
 pub mod runtime;
 
-pub use generate::{GenerateError, GenerateOptions, generate};
+pub use canvas::{AssembleError, CanvasScreen, CanvasView, assemble_canvas};
+pub use generate::{GenerateError, GenerateOptions, generate, generate_embedded};
 pub use import::{ImportError, ImportOptions, MAX_SOURCE_LENGTH, import_slint};
+pub use names::type_name;
 #[cfg(feature = "import")]
 pub use read::read_slint;
 #[cfg(feature = "import")]

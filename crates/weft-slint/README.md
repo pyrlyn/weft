@@ -23,7 +23,7 @@ The crate is pure Rust over `weft-core` and `weft-catalog`. The Slint compiler (
 | --- | --- |
 | Source comment | `// weft:source slint` and the canonical markup, one line per comment line |
 | Imports | Only the std widgets the screen uses |
-| Component | `export component <Name>Screen inherits Window`, `title` from the screen's `label` |
+| Component | `export component <Name>Screen inherits Window`, `title` from the screen's `label`. `generate_embedded` prints the same component with no `Window` and no `title`, and writes `embed` on the source comment, so a host can place several screens in one window. A `menu` is refused there: a `MenuBar` belongs to the window |
 | Data | One `in-out property` per root data path a binding reads: `$.email` → `email`, `$.user.email` → `user-email` |
 | Actions | `callback perform(string, string)`: the action name and the id of the element |
 | Body | A `VerticalBox` named after the screen id, holding the elements |
@@ -34,7 +34,7 @@ A host sets and reads the data through the properties (`set_email`, `get_email` 
 
 | Weft | Slint |
 | --- | --- |
-| `screen` | `Window` component with a `VerticalBox` (`alignment: start`) |
+| `screen` | `Window` component with a `VerticalBox` (`alignment: start`). The embedded form is the `VerticalBox` alone, with no `Window` |
 | `stack` | `VerticalLayout` or `HorizontalLayout` (`direction`); a `gap` token → `spacing` in px (`rem` × 16) |
 | `grid` | `GridLayout`; child `n` gets `row: n / columns` and `col: n % columns` |
 | `section` | `GroupBox` (`title` from `label`) around a `VerticalBox`, the `header` slot first |
