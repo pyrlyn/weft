@@ -109,7 +109,7 @@ The native shell and the shared surface talk only through the slint-bindings C A
 5. Round trip with the outside: the saved files stay canonical (`weft fmt` leaves them unchanged), the existing exporters (SwiftUI, web, Slint, A2UI) run from the native menus, and files edited by agents or by hand reload without losing the selection where ids still exist.
 6. Packaging: signed builds for macOS (arm64 only) and Windows x86_64, with the toolchain rows in `toolchain.md`.
 
-T69.2a, T69.2b, T69.2c and T69.2d, the first slices of milestone 2, are done (`done.md`): `generate_embedded` prints a screen as a Slint component that does not inherit `Window`, `compose` places several of those components in one `Canvas` window with `pan-x`, `pan-y` and `zoom`, a left-pointer drag on the window background changes `pan-x` and `pan-y`, and `canvas_chrome` adds rulers, wheel zoom and arrow-key pan. Selection, hover and keyboard navigation of the element tree are still open.
+T69.2a, T69.2b, T69.2c and T69.2e, the first slices of milestone 2, are done (`done.md`): `generate_embedded` prints a screen as a Slint component that does not inherit `Window`, `compose` places several of those components in one `Canvas` window with `pan-x`, `pan-y` and `zoom`, a left-pointer drag on the window background changes `pan-x` and `pan-y`, and `canvas_chrome` draws the rulers and adds wheel zoom and arrow-key pan. Selection, hover and keyboard navigation of the element tree are still open.
 
 **Acceptance criteria.**
 

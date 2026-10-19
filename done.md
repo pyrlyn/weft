@@ -2091,7 +2091,7 @@ Next slice of T69 milestone 2. `compose` already exposes `pan-x` and `pan-y`. A 
 
 Result: dragging the background pans the canvas. Rulers, selection and keyboard navigation stay open.
 
-### T69.2d. Canvas rulers, wheel zoom and arrow keys
+### T69.2e. Canvas rulers, wheel zoom and arrow keys
 
 Next slice of T69 milestone 2. `canvas_chrome` takes the file `compose` prints and adds rulers, wheel zoom and arrow-key pan. The wheel sets zoom between 0.25 and 4. The arrow keys pan by 40px while the canvas has focus. Each ruler draws 40 ticks of 40px that follow the pan and the zoom. Pointer pan stays the left-button drag `compose` already has, so this does not add a second gesture. Zoom still changes a frame's width only, which is what `compose` already does: the software renderer has no transforms (Slint 1.18). A source that is not that `Canvas` window is refused. Done when `login` and `account` compile with the chrome, a ruler tick is visible, the wheel and the left arrow change the properties, the background-drag test still passes, and a plain generated `Window` is refused.
 
