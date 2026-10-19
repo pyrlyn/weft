@@ -8,14 +8,16 @@
 
 mod common;
 
+use slint_interpreter::ComponentHandle;
 use weft_catalog::token_types;
 use weft_core::{Mode, ValidateOptions, serialize, validate_document};
 use weft_slint::{
-    EmbeddedComponent, GenerateError, GenerateOptions, ImportError, ImportOptions,
-    MAX_SOURCE_LENGTH, generate, generate_embedded, import_slint, read_slint, runtime,
+    CanvasFrame, ComposeError, EmbeddedComponent, GenerateError, GenerateOptions, ImportError,
+    ImportOptions, MAX_SOURCE_LENGTH, compose, generate, generate_embedded, import_slint,
+    read_slint, runtime,
 };
 
-use common::{document, exported_component, here, screens, setup};
+use common::{document, ensure_backend, exported_component, here, screens, setup};
 
 /// Error-level diagnostics of the Slint compiler, and whether it built `component`.
 fn compile(source: &str, component: &str) -> (Vec<String>, bool) {
@@ -396,4 +398,128 @@ fn an_embedded_screen_compiles_inside_a_host_window() {
     let host = host_of(&[login.1.clone(), other.1.clone()]);
     let (errors, built) = compile(&host, "Host");
     assert!(errors.is_empty() && built, "{errors:#?}\n{host}");
+}
+
+fn embedded<'a>(
+    name: &str,
+    catalog: &'a weft_core::Catalog,
+    tokens: &'a indexmap::IndexMap<String, weft_catalog::Token>,
+) -> weft_slint::EmbeddedComponent {
+    let path = screens()
+        .into_iter()
+        .find(|(found, _)| found == name)
+        .unwrap()
+        .1;
+    let doc = document(&std::fs::read_to_string(path).unwrap(), catalog, tokens);
+    generate_embedded(
+        &doc,
+        &GenerateOptions {
+            catalog,
+            tokens,
+            name: None,
+        },
+    )
+    .unwrap()
+}
+
+#[test]
+fn compose_refuses_a_duplicate_name_and_a_bad_length() {
+    let (catalog, tokens) = setup();
+    let login = embedded("login", &catalog, &tokens);
+    let duplicate = compose(&[
+        CanvasFrame {
+            component: &login,
+            x: 0.0,
+            y: 0.0,
+            width: 390.0,
+        },
+        CanvasFrame {
+            component: &login,
+            x: 400.0,
+            y: 0.0,
+            width: 390.0,
+        },
+    ]);
+    assert_eq!(
+        duplicate,
+        Err(ComposeError::Duplicate("LoginScreen".into()))
+    );
+    let bad = compose(&[CanvasFrame {
+        component: &login,
+        x: 0.0,
+        y: f64::NAN,
+        width: 390.0,
+    }]);
+    assert_eq!(bad, Err(ComposeError::Length));
+    let zero = compose(&[CanvasFrame {
+        component: &login,
+        x: 0.0,
+        y: 0.0,
+        width: 0.0,
+    }]);
+    assert_eq!(zero, Err(ComposeError::Length));
+}
+
+#[test]
+fn a_canvas_of_two_screens_compiles_and_paints_both() {
+    let (catalog, tokens) = setup();
+    let login = embedded("login", &catalog, &tokens);
+    let account = embedded("account", &catalog, &tokens);
+    let source = compose(&[
+        CanvasFrame {
+            component: &login,
+            x: 32.0,
+            y: 24.0,
+            width: 360.0,
+        },
+        CanvasFrame {
+            component: &account,
+            x: 440.0,
+            y: 24.0,
+            width: 360.0,
+        },
+    ])
+    .unwrap();
+    assert!(source.contains("export component Canvas inherits Window"));
+    assert!(source.contains("in-out property <length> pan-x: 0px;"));
+    assert!(source.contains("frame-0 := LoginScreen"));
+    assert!(source.contains("frame-1 := AccountScreen"));
+    assert!(source.contains("x: 32px + root.pan-x;"));
+    assert!(source.contains("width: 360px * root.zoom;"));
+    let (errors, built) = compile(&source, "Canvas");
+    assert!(errors.is_empty() && built, "{errors:#?}\n{source}");
+
+    ensure_backend();
+    let instance = runtime::compile(&source, "fluent")
+        .unwrap()
+        .create()
+        .unwrap();
+    instance
+        .window()
+        .set_size(slint_interpreter::PhysicalSize::new(1600, 900));
+    let buffer = instance.window().take_snapshot().unwrap();
+    let bytes = buffer.as_bytes();
+    let width = buffer.width();
+    let height = buffer.height();
+    assert!(
+        paints(bytes, width, height, 32, 200, 24, 160),
+        "login frame is blank"
+    );
+    assert!(
+        paints(bytes, width, height, 440, 640, 24, 160),
+        "account frame is blank"
+    );
+}
+
+fn paints(bytes: &[u8], width: u32, height: u32, x0: u32, x1: u32, y0: u32, y1: u32) -> bool {
+    let bg = &bytes[..4];
+    for y in y0..y1.min(height) {
+        for x in x0..x1.min(width) {
+            let i = ((y * width + x) * 4) as usize;
+            if bytes.get(i..i + 4).is_some_and(|px| px != bg) {
+                return true;
+            }
+        }
+    }
+    false
 }

@@ -2073,5 +2073,13 @@ First slice of T69 milestone 2 (the canvas). T69.1 renders one screen as an expo
 
 **Execution plan.** (1) SPEC §9 "To Slint" and the `menu` row, AGENT-SPEC §5, and the crate README, in the same change as the code. (2) `generate_embedded` in `crates/weft-slint` sharing the generator with `generate`. (3) `tests/slint.rs`: every corpus screen and the controls fixture either compiles inside a host window or is refused only for a menu; `login` keeps its label and preferred size; `menu` is the only refusal; two screens compile as one file. (4) `cargo fmt`, `cargo test -p weft-slint --test slint`, clippy on the crate.
 
-Result: `generate_embedded` returns the component name, the sorted `std-widgets` imports and the component source. The `Window` goldens are unchanged. Pan, zoom, rulers and selection stay for later slices of milestone 2.
+Result: https://github.com/pyrlyn/weft/pull/131. `generate_embedded` returns the component name, the sorted `std-widgets` imports and the component source. The `Window` goldens are unchanged.
+
+### T69.2b. A canvas of embedded screens
+
+Next slice of T69 milestone 2. `compose` assembles `generate_embedded` components into one `.slint` file whose only export is `Canvas`, a `Window`. Each frame is placed at `x + pan-x`, `y + pan-y`, with `width * zoom`, so a host moves the frames without regenerating the file. A repeated component name, or a position or width that is not a finite positive width, is an error. Done when two corpus screens compile in one canvas and a headless render paints both frames, and the `Window` goldens stay unchanged.
+
+**Execution plan.** (1) SPEC §9, AGENT-SPEC §5 and the crate README, with the code. (2) `compose` in `crates/weft-slint`. (3) Tests: a duplicate name and a non-finite or empty width are refused; `login` and `account` compile as `Canvas` and a software-renderer snapshot has ink in both frames. (4) `cargo fmt`, `cargo test -p weft-slint --test slint`, clippy.
+
+Result: `compose` writes the import line, each component once, and `Canvas` with `pan-x`, `pan-y` and `zoom`. Rulers, selection, keyboard navigation and pointer pan stay open.
 

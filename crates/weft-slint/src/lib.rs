@@ -6,6 +6,7 @@
 //! `runtime` (feature `runtime`) compiles the generated source with the Slint interpreter and fills
 //! it with sample data. The mapping is documented in this crate's README.
 
+mod compose;
 mod data;
 mod generate;
 mod import;
@@ -17,6 +18,7 @@ mod read_expr;
 #[cfg(feature = "runtime")]
 pub mod runtime;
 
+pub use compose::{CanvasFrame, ComposeError, compose};
 pub use generate::{
     EmbeddedComponent, GenerateError, GenerateOptions, generate, generate_embedded,
 };
