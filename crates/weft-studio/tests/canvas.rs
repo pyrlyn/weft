@@ -117,6 +117,23 @@ fn pan_and_zoom_are_clamped_and_written_into_the_window() {
 }
 
 #[test]
+fn pan_snaps_to_the_frame_gap() {
+    let (_scratch, mut canvas) = pair();
+    canvas.set_pan(-80.0, 24.0);
+    canvas.snap_pan();
+    assert_eq!(canvas.state().pan_x, -96.0);
+    assert_eq!(canvas.state().pan_y, 48.0);
+    canvas.set_pan(20.0, -24.0);
+    canvas.snap_pan();
+    assert_eq!(canvas.state().pan_x, 0.0);
+    assert_eq!(canvas.state().pan_y, -48.0);
+    canvas.set_pan(f64::NAN, 48.0);
+    canvas.snap_pan();
+    assert_eq!(canvas.state().pan_x, 0.0);
+    assert_eq!(canvas.state().pan_y, 48.0);
+}
+
+#[test]
 fn selection_walks_the_element_tree_and_the_frames() {
     let (_scratch, mut canvas) = pair();
     let paths = canvas.paths(0).unwrap();

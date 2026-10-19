@@ -244,6 +244,10 @@ impl WsCanvas {
         self.canvas.set_zoom(zoom);
     }
 
+    fn snap_pan(&mut self) {
+        self.canvas.snap_pan();
+    }
+
     fn move_selection(&mut self, direction: Direction) {
         self.canvas.move_selection(direction);
     }

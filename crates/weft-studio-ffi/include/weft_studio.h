@@ -115,6 +115,13 @@ char *ws_canvas_state_json(const struct WsCanvas *canvas);
 // `canvas` is null or live.
 bool ws_canvas_set_view(struct WsCanvas *canvas, double pan_x, double pan_y, double zoom);
 
+// Rounds pan to the nearest multiple of the 48px frame gap. Halfway rounds away from zero.
+// A `changed` event follows.
+//
+// # Safety
+// `canvas` is null or live.
+bool ws_canvas_snap(struct WsCanvas *canvas);
+
 // Moves the selection. `direction` is `WS_CANVAS_NEXT` (0), `WS_CANVAS_PREVIOUS` (1),
 // `WS_CANVAS_PARENT` (2), `WS_CANVAS_NEXT_FRAME` (3) or `WS_CANVAS_PREVIOUS_FRAME` (4). Anything
 // else fails and leaves the selection. A `changed` event follows a move.

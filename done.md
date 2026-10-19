@@ -2099,3 +2099,11 @@ Done when: selecting the account screen and hovering the login screen shows both
 
 Result: as planned. Clearing does not need the frame to exist.
 
+### T69.5. Snap canvas pan to the grid
+
+`Canvas::snap_pan` rounds `pan_x` and `pan_y` to the nearest multiple of the 48px frame gap. Halfway rounds away from zero. `ws_canvas_snap` does that and sends `changed`. Free pan stays available through `set_pan` / `ws_canvas_set_view`. The shells stay on one screen.
+
+Done when: -80 and 24 snap to -96 and 48, 20 and -24 snap to 0 and -48, and the ABI reports the same numbers.
+
+Result: as planned. A non-finite axis is left unchanged, and `set_pan` never stores one.
+

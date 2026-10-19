@@ -151,6 +151,17 @@ namespace WeftStudio.Native
         internal static extern bool ws_canvas_set_view(WsCanvas* canvas, double pan_x, double pan_y, double zoom);
 
         /// <summary>
+        ///  Rounds pan to the nearest multiple of the 48px frame gap. Halfway rounds away from zero.
+        ///  A `changed` event follows.
+        ///
+        ///  # Safety
+        ///  `canvas` is null or live.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "ws_canvas_snap", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static extern bool ws_canvas_snap(WsCanvas* canvas);
+
+        /// <summary>
         ///  Moves the selection. `direction` is `WS_CANVAS_NEXT` (0), `WS_CANVAS_PREVIOUS` (1),
         ///  `WS_CANVAS_PARENT` (2), `WS_CANVAS_NEXT_FRAME` (3) or `WS_CANVAS_PREVIOUS_FRAME` (4). Anything
         ///  else fails and leaves the selection. A `changed` event follows a move.

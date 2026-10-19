@@ -171,6 +171,13 @@ impl Canvas {
         }
     }
 
+    /// Rounds pan to the nearest multiple of [`FRAME_GAP`]. Halfway rounds away from zero.
+    /// A non-finite axis stays as it was.
+    pub fn snap_pan(&mut self) {
+        self.pan_x = snap_axis(self.pan_x);
+        self.pan_y = snap_axis(self.pan_y);
+    }
+
     pub fn paths(&self, frame: usize) -> Result<Vec<String>, CanvasError> {
         let frame = self.frames.get(frame).ok_or(CanvasError::Frame(frame))?;
         Ok(element_order(frame.editor.document()))
@@ -350,6 +357,14 @@ impl Canvas {
                     .map_err(|error| error.to_string())
             })
             .collect()
+    }
+}
+
+fn snap_axis(value: f64) -> f64 {
+    if value.is_finite() {
+        (value / FRAME_GAP).round() * FRAME_GAP
+    } else {
+        value
     }
 }
 

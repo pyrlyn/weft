@@ -269,6 +269,23 @@ pub unsafe extern "C" fn ws_canvas_set_view(
     })
 }
 
+/// Rounds pan to the nearest multiple of the 48px frame gap. Halfway rounds away from zero.
+/// A `changed` event follows.
+///
+/// # Safety
+/// `canvas` is null or live.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ws_canvas_snap(canvas: *mut WsCanvas) -> bool {
+    guard(false, || {
+        // SAFETY: forwarded caller contract.
+        let canvas = unsafe { canvas_mut(canvas)? };
+        canvas.snap_pan();
+        let sink = canvas.sink;
+        sink.emit(&changed());
+        Ok(true)
+    })
+}
+
 /// Moves the selection. `direction` is `WS_CANVAS_NEXT` (0), `WS_CANVAS_PREVIOUS` (1),
 /// `WS_CANVAS_PARENT` (2), `WS_CANVAS_NEXT_FRAME` (3) or `WS_CANVAS_PREVIOUS_FRAME` (4). Anything
 /// else fails and leaves the selection. A `changed` event follows a move.
