@@ -511,6 +511,107 @@ fn a_canvas_of_two_screens_compiles_and_paints_both() {
     );
 }
 
+#[test]
+fn dragging_the_canvas_background_pans_it() {
+    let block = EmbeddedComponent {
+        name: "BlockScreen".into(),
+        imports: vec![],
+        source: "\
+component BlockScreen inherits Rectangle {
+    background: red;
+    preferred-width: 100px;
+    preferred-height: 80px;
+    control := TouchArea { width: 100%; height: 100%; }
+}
+"
+        .into(),
+    };
+    let source = compose(&[CanvasFrame {
+        component: &block,
+        x: 200.0,
+        y: 40.0,
+        width: 100.0,
+    }])
+    .unwrap();
+    let touch = source.find("touch := TouchArea").unwrap();
+    let frame = source.find("frame-0 := BlockScreen").unwrap();
+    assert!(touch < frame, "the background sits behind the frames");
+    let (errors, built) = compile(&source, "Canvas");
+    assert!(errors.is_empty() && built, "{errors:#?}\n{source}");
+
+    ensure_backend();
+    let instance = runtime::compile(&source, "fluent")
+        .unwrap()
+        .create()
+        .unwrap();
+    let window = instance.window();
+    window.set_size(slint_interpreter::PhysicalSize::new(800, 600));
+    // Layout runs with the snapshot, so the frame has a size before the pointer arrives.
+    window.take_snapshot().unwrap();
+
+    let at = |x, y| i_slint_core::api::LogicalPosition::new(x, y);
+    let left = i_slint_core::items::PointerEventButton::Left;
+    let right = i_slint_core::items::PointerEventButton::Right;
+    let send = |event| window.dispatch_event(event);
+    let pan = || {
+        (
+            instance.get_property("pan-x").unwrap(),
+            instance.get_property("pan-y").unwrap(),
+        )
+    };
+    let number = slint_interpreter::Value::Number;
+
+    send(i_slint_core::platform::WindowEvent::PointerPressed {
+        position: at(20.0, 20.0),
+        button: right,
+    });
+    send(i_slint_core::platform::WindowEvent::PointerMoved {
+        position: at(90.0, 90.0),
+    });
+    assert_eq!(pan(), (number(0.0), number(0.0)));
+    send(i_slint_core::platform::WindowEvent::PointerReleased {
+        position: at(90.0, 90.0),
+        button: right,
+    });
+
+    // The frame's own TouchArea covers (200, 40) at 100 by 80, so this drag is not the background.
+    send(i_slint_core::platform::WindowEvent::PointerPressed {
+        position: at(220.0, 60.0),
+        button: left,
+    });
+    send(i_slint_core::platform::WindowEvent::PointerMoved {
+        position: at(280.0, 100.0),
+    });
+    assert_eq!(pan(), (number(0.0), number(0.0)));
+    send(i_slint_core::platform::WindowEvent::PointerReleased {
+        position: at(280.0, 100.0),
+        button: left,
+    });
+
+    send(i_slint_core::platform::WindowEvent::PointerPressed {
+        position: at(20.0, 20.0),
+        button: left,
+    });
+    send(i_slint_core::platform::WindowEvent::PointerMoved {
+        position: at(70.0, 50.0),
+    });
+    assert_eq!(pan(), (number(50.0), number(30.0)));
+    assert_eq!(instance.get_property("zoom").unwrap(), number(1.0));
+    send(i_slint_core::platform::WindowEvent::PointerReleased {
+        position: at(70.0, 50.0),
+        button: left,
+    });
+
+    send(i_slint_core::platform::WindowEvent::PointerPressed {
+        position: at(70.0, 50.0),
+        button: left,
+    });
+    send(i_slint_core::platform::WindowEvent::PointerMoved {
+        position: at(80.0, 60.0),
+    });
+    assert_eq!(pan(), (number(60.0), number(40.0)));
+}
+
 fn paints(bytes: &[u8], width: u32, height: u32, x0: u32, x1: u32, y0: u32, y1: u32) -> bool {
     let bg = &bytes[..4];
     for y in y0..y1.min(height) {
