@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use weft_catalog::{Token, token_types};
 use weft_core::{Catalog, Diagnostic, Document, Mode, ParseOptions, has_errors, parse};
 
-use crate::generate::{GenerateOptions, MARKER, generate};
+use crate::generate::{GenerateOptions, MARKER, generate, generate_embedded};
 
 /// The longest source the importer reads, as the SwiftUI and A2UI importers bound theirs.
 pub const MAX_SOURCE_LENGTH: usize = 2_000_000;
@@ -52,6 +52,8 @@ pub fn import_slint(source: &str, options: &ImportOptions<'_>) -> Result<Documen
     let name = head
         .split_whitespace()
         .find_map(|w| w.strip_prefix("name="));
+    // `embed` selects the component with no window. Any other word is left alone, as `name=` is.
+    let embed = head.split_whitespace().any(|word| word == "embed");
     let markup: Vec<&str> = lines
         .map(str::trim_start)
         .map_while(|l| l.strip_prefix("// ").or((l == "//").then_some("")))
@@ -70,14 +72,16 @@ pub fn import_slint(source: &str, options: &ImportOptions<'_>) -> Result<Documen
         Some(d) if !has_errors(&parsed.diagnostics) => d,
         _ => return Err(ImportError::Invalid(parsed.diagnostics)),
     };
-    let again = generate(
-        &document,
-        &GenerateOptions {
-            catalog: options.catalog,
-            tokens: options.tokens,
-            name,
-        },
-    )
+    let generated = GenerateOptions {
+        catalog: options.catalog,
+        tokens: options.tokens,
+        name,
+    };
+    let again = if embed {
+        generate_embedded(&document, &generated)
+    } else {
+        generate(&document, &generated)
+    }
     .map_err(|_| ImportError::Edited)?;
     if normalized(&again) != normalized(source) {
         return Err(ImportError::Edited);

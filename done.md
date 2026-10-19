@@ -2066,3 +2066,16 @@ Execution plan:
 3. Run the plugin build, clippy and tests, the nested audit, and the full repository merge gate. Close this card only after successful checks.
 
 Done: reused the existing shared host at merged commit `7fc02456ec732e6b742ffb8245ad78d5318e7b9d`; the nested lockfile now contains Wasmtime/WASI 49.0.3 and no Wasmtime 43. The nested RustSec audit changed from vulnerable to clean. Plugin build, strict host/guest clippy, all 21 plugin tests (including four end-to-end cases), and the full 38-task repository gate passed. No guest ABI, generated output, new dependency, or custom implementation was needed.
+
+### T69.2. Canvas document: frames, pan, zoom and element selection
+
+Milestone 2 of T69, the part that does not need a window: several `.weft` files as frames, one Slint canvas, and selection along the element tree. The shells stay on milestone 1 (one screen). Snapping, an element highlight and drawing this canvas in the shells are still part of T69.
+
+1. `generate_embedded` prints `export component <Name>Screen` with no `Window` and no `title`. The source comment carries `embed`, and `import_slint` regenerates that form. A `menu` is refused: a `MenuBar` belongs to a window, and the canvas has one window for every screen. SPEC §9, AGENT-SPEC and the crate README say so. `weft slint` still prints a window.
+2. `assemble_canvas` makes those components private and exports `WeftStudioCanvas`: a `Flickable` whose `content-x` and `content-y` are `pan-x` and `pan-y`, `zoom`, rulers and a 48px grid, and one frame per screen. `perform` forwards the screen id, the action and the element id. `transform-scale` carries `zoom`; Slint 1.18.1's software renderer does not apply transforms, so there the frame boxes grow and the screen inside keeps its size.
+3. `weft_studio::Canvas` opens a list or a directory of `.weft` files, places frames at 480 by 800 with a 48px gap, and walks selection and hover by the diagnostic paths (SPEC §6.1) in document order. A screen that cannot be embedded stays in the state and out of the window. Saving one frame is still canonical.
+
+Done when: every corpus screen that has no menu embeds, reads back, and compiles inside one canvas window; a menu stays out of that window; two stems that would name one component are split; pan, zoom and keyboard movement of the selection are covered by `crates/weft-studio/tests/canvas.rs`. The shells are unchanged.
+
+Result: as planned. `foo-bar` and `foo_bar` no longer share a component name. Zoom is clamped to 1/4 through 4. The canvas source is not a Weft document: each screen keeps its own source comment, and the file is not what `import_slint` reads.
+

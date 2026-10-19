@@ -1,7 +1,15 @@
 //! The document core of WeftStudio, the desktop editor (T69): one Weft screen opened from a
 //! `.weft` file with the project above it (SPEC §10.1), saved canonical, and the input a Slint
-//! surface renders. No Slint crate here: the shells' FFI crate compiles the source with the
-//! `weft-slint` runtime, so this core stays testable on its own.
+//! surface renders. `Canvas` opens several screens as frames on one canvas (T69.2). No Slint
+//! crate here: the shells' FFI crate compiles the source with the `weft-slint` runtime, so this
+//! core stays testable on its own.
+
+mod canvas;
+
+pub use canvas::{
+    Canvas, CanvasError, CanvasState, Direction, ElementRef, FRAME_GAP, FRAME_HEIGHT, FRAME_WIDTH,
+    FrameState,
+};
 
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -14,7 +22,7 @@ use weft_catalog::{
     find_project, load_project_file, load_tokens, read_project_member, token_types, write_atomic,
 };
 use weft_core::{Catalog, Diagnostic, Document, Mode, ParseOptions, parse, parse_json, serialize};
-use weft_slint::{GenerateError, GenerateOptions, MAX_SOURCE_LENGTH, generate};
+use weft_slint::{GenerateError, GenerateOptions, MAX_SOURCE_LENGTH, generate, generate_embedded};
 
 /// The largest file `open` reads: the screen's markup travels inside the generated Slint source,
 /// so the bound `weft-slint` puts on Slint input is the bound here.
@@ -182,6 +190,24 @@ impl Editor {
             source,
             data: self.sample_data()?,
         })
+    }
+
+    /// The screen as a component with no `Window`, so a canvas can place several of them in one
+    /// window. `name` is the component stem (`login` → `LoginScreen`); a `menu` is refused.
+    pub fn embedded_source(&self, name: Option<&str>) -> Result<String, EditorError> {
+        generate_embedded(
+            &self.document,
+            &GenerateOptions {
+                catalog: &self.catalog,
+                tokens: &self.tokens,
+                name,
+            },
+        )
+        .map_err(Into::into)
+    }
+
+    pub(crate) fn document(&self) -> &Document {
+        &self.document
     }
 
     fn sample_data(&self) -> Result<Option<Json>, EditorError> {

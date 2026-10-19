@@ -6,7 +6,7 @@ An open, agent-friendly UI description format — strict markup for models, cano
 | --- | --- | --- | --- | --- | --- |
 | T8 | in progress | P1 | 3 | 70% | Claude Code / claude-opus-5-5 |
 | T14 | in progress | P2 | 5 | 75% | Claude Code / claude-opus-5-5 |
-| T69 | todo | P2 | 5 | 0% | |
+| T69 | in progress | P2 | 5 | 20% | Cursor / grok-4.7 |
 | T69.1 | in progress | P2 | 4 | 95% | Claude Code / claude-opus-5-5 |
 | T106 | in progress | P2 | 5 | 95% | Claude Code / claude-opus-5-5 |
 | T106.7 | in progress | P2 | 4 | 95% | Claude Code / claude-opus-5-5 |
@@ -120,6 +120,8 @@ The native shell and the shared surface talk only through the slint-bindings C A
 **Out of scope.** Multiplayer and real-time collaboration, cloud storage, accounts and sharing, comments and review threads, prototyping and interaction flows, vector drawing tools and boolean shape operations, image editing, plugins for the editor, Figma file import (T14 covers the Figma round trip), a web version (later, through Slint's WebAssembly build), iOS and Android, Intel Macs, and Linux.
 
 The creator approved T69.1, the plan of the first milestone; its sub-tasks T69.1a and T69.1b are done.
+
+Progress: T69.1a–T69.1e are done (`done.md`). T69.2 (`done.md`) is the document core of milestone 2: several `.weft` files as frames, one Slint canvas (pan, zoom, rulers, grid) and selection and hover along the element tree. The shells still show one screen. Still open for milestone 2: drawing that canvas in the shells, snapping, and a highlight on the selected element. Zoom uses `transform-scale`, which the software renderer does not apply, so on that renderer the frame boxes grow and the screen inside keeps its own size.
 
 ### T69.1. Editor skeleton
 

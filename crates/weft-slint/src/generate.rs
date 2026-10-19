@@ -48,6 +48,25 @@ pub fn generate(
     document: &Document,
     options: &GenerateOptions<'_>,
 ) -> Result<String, GenerateError> {
+    generate_with(document, options, false)
+}
+
+/// The same component as [`generate`], without a `Window`: `export component <Name>Screen` has no
+/// `title`, and the source comment carries the word `embed`, so [`crate::import_slint`] regenerates
+/// this form. A host places several of these in one window (the studio canvas). A `menu` is refused:
+/// a `MenuBar` belongs to a `Window`, and a canvas has one window for every screen.
+pub fn generate_embedded(
+    document: &Document,
+    options: &GenerateOptions<'_>,
+) -> Result<String, GenerateError> {
+    generate_with(document, options, true)
+}
+
+fn generate_with(
+    document: &Document,
+    options: &GenerateOptions<'_>,
+    embed: bool,
+) -> Result<String, GenerateError> {
     let types = token_types(options.tokens);
     let diagnostics = validate_document(
         document,
@@ -83,17 +102,32 @@ pub fn generate(
         hooks: vec![],
         inits: vec![],
     };
+    // After expand, so a menu that arrives inside a fragment is refused too.
+    if embed && let Some(menu) = find_menu(&document.root) {
+        return Err(GenerateError::Unsupported(vec![Unsupported::new(
+            path_of(menu),
+            "a menu is a window menu bar, and an embedded screen is not a window",
+        )]));
+    }
     let name = options
         .name
         .or(document.root.id.as_deref())
         .unwrap_or("screen");
-    g.screen(&document.root, &format!("{}Screen", type_name(name)));
+    g.screen(&document.root, &format!("{}Screen", type_name(name)), embed);
     if !g.problems.is_empty() {
         return Err(GenerateError::Unsupported(g.problems));
     }
-    let mut head = match options.name {
-        Some(n) => format!("{MARKER} name={n}\n"),
-        None => format!("{MARKER}\n"),
+    let mut words = Vec::new();
+    if let Some(n) = options.name {
+        words.push(format!("name={n}"));
+    }
+    if embed {
+        words.push("embed".to_owned());
+    }
+    let mut head = if words.is_empty() {
+        format!("{MARKER}\n")
+    } else {
+        format!("{MARKER} {}\n", words.join(" "))
     };
     for line in source.lines() {
         head.push_str(&format!("// {line}\n"));
@@ -117,6 +151,26 @@ fn path_of(node: &Node) -> String {
 
 fn element_children(node: &Node) -> impl Iterator<Item = &Node> {
     node.children.iter().filter_map(Child::as_node)
+}
+
+/// The first `menu` in document order, children before slots, as the generator walks.
+fn find_menu(node: &Node) -> Option<&Node> {
+    if node.kind == "menu" {
+        return Some(node);
+    }
+    for child in element_children(node) {
+        if let Some(found) = find_menu(child) {
+            return Some(found);
+        }
+    }
+    for list in node.slots.values() {
+        for child in list.iter().filter_map(Child::as_node) {
+            if let Some(found) = find_menu(child) {
+                return Some(found);
+            }
+        }
+    }
+    None
 }
 
 /// Every id must be a Slint element id, and no two may be the same id to Slint.
@@ -278,9 +332,15 @@ impl Gen<'_> {
         }
     }
 
-    fn screen(&mut self, root: &Node, name: &str) {
-        self.line(0, &format!("export component {name} inherits Window {{"));
-        self.bind_line(1, root, "label", "title", Ty::Str);
+    fn screen(&mut self, root: &Node, name: &str, embed: bool) {
+        // No `Window`, so the component can be instantiated inside the canvas window. `title` is a
+        // window property; the frame around the screen shows the label instead.
+        if embed {
+            self.line(0, &format!("export component {name} {{"));
+        } else {
+            self.line(0, &format!("export component {name} inherits Window {{"));
+            self.bind_line(1, root, "label", "title", Ty::Str);
+        }
         let props: Vec<String> = self
             .data
             .props
