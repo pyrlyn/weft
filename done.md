@@ -2079,3 +2079,15 @@ Done when: every corpus screen that has no menu embeds, reads back, and compiles
 
 Result: as planned. `foo-bar` and `foo_bar` no longer share a component name. Zoom is clamped to 1/4 through 4. The canvas source is not a Weft document: each screen keeps its own source comment, and the file is not what `import_slint` reads.
 
+### T69.3. Canvas C ABI
+
+The canvas of T69.2 on the `ws_*` ABI, so a shell can open it without linking `weft-studio` itself. The API version stays 0. The shells stay on one screen.
+
+1. `ws_canvas_open_dir` opens every `.weft` file directly in a directory. It does not send `changed`, because the caller does not hold the pointer until the call returns.
+2. `ws_canvas_state_json`, `ws_canvas_set_view`, `ws_canvas_move` (`WS_CANVAS_NEXT` 0, `WS_CANVAS_PREVIOUS` 1, `WS_CANVAS_PARENT` 2, `WS_CANVAS_NEXT_FRAME` 3, `WS_CANVAS_PREVIOUS_FRAME` 4) and `ws_canvas_save` (a null path saves in place). `set_view`, `move` and `save` send `changed` after they release the canvas, so the callback may read the state.
+3. `ws_canvas_surface_new` compiles the canvas and connects `perform(screen, action, id)` to an `action` event that names the screen. The header and the C# bindings are regenerated.
+
+Done when: a directory of two corpus screens opens, the state lists both, keyboard movement and an in-place save round-trip through the ABI, a menu stays in the state with `embedded` false, a null path and an unknown direction fail with a message, and one surface renders pixels that are not all transparent. The shells are unchanged.
+
+Result: as planned. A call from another thread fails. Sample data stays on the single-screen editor.
+
