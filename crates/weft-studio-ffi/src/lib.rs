@@ -248,6 +248,34 @@ impl WsCanvas {
         self.canvas.move_selection(direction);
     }
 
+    /// `None` clears. A path must name an element on that frame.
+    fn select(&mut self, frame: u32, path: Option<&str>) -> Result<(), String> {
+        match path {
+            None => {
+                self.canvas.clear_selection();
+                Ok(())
+            }
+            Some(path) => self
+                .canvas
+                .select(frame as usize, path)
+                .map_err(describe_canvas),
+        }
+    }
+
+    /// `None` clears. A path must name an element on that frame.
+    fn hover(&mut self, frame: u32, path: Option<&str>) -> Result<(), String> {
+        match path {
+            None => {
+                self.canvas.clear_hover();
+                Ok(())
+            }
+            Some(path) => self
+                .canvas
+                .set_hover(frame as usize, path)
+                .map_err(describe_canvas),
+        }
+    }
+
     fn save(&mut self, frame: u32, path: Option<&Path>) -> Result<(), String> {
         self.canvas
             .save(frame as usize, path)

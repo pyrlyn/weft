@@ -163,6 +163,28 @@ namespace WeftStudio.Native
         internal static extern bool ws_canvas_move(WsCanvas* canvas, uint direction);
 
         /// <summary>
+        ///  Selects the element `path` on frame `frame` (0-based). A null `path` clears the selection.
+        ///  An unknown element fails and leaves the selection. A `changed` event follows.
+        ///
+        ///  # Safety
+        ///  `canvas` is null or live; `path` is null or a NUL-terminated string.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "ws_canvas_select", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static extern bool ws_canvas_select(WsCanvas* canvas, uint frame, byte* path);
+
+        /// <summary>
+        ///  Hovers the element `path` on frame `frame` (0-based). A null `path` clears the hover. An
+        ///  unknown element fails and leaves the hover. A `changed` event follows.
+        ///
+        ///  # Safety
+        ///  `canvas` is null or live; `path` is null or a NUL-terminated string.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "ws_canvas_hover", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static extern bool ws_canvas_hover(WsCanvas* canvas, uint frame, byte* path);
+
+        /// <summary>
         ///  Saves frame `frame` (0-based, in the order `ws_canvas_open_dir` opened) as canonical markup
         ///  to the UTF-8 `path`, or to its current path when `path` is null. A `changed` event follows.
         ///

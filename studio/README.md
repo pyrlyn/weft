@@ -9,8 +9,9 @@ add only chrome and dialogs.
 
 The document core can also open several `.weft` files as frames on one canvas (`weft_studio::Canvas`,
 T69.2): pan, zoom, rulers and a grid in the generated Slint, and selection along the element tree.
-The C ABI exposes that canvas as `ws_canvas_*` (T69.3). The shells do not show that canvas yet;
-they still open one screen.
+The C ABI exposes that canvas as `ws_canvas_*` (T69.3, T69.4): open a directory, pan, zoom, move
+the selection, select or hover an element, and save a frame. The shells do not show that canvas
+yet; they still open one screen.
 
 | Folder | What it is |
 | --- | --- |

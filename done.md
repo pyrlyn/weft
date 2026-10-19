@@ -2091,3 +2091,11 @@ Done when: a directory of two corpus screens opens, the state lists both, keyboa
 
 Result: as planned. A call from another thread fails. Sample data stays on the single-screen editor.
 
+### T69.4. Canvas selection and hover on the C ABI
+
+A shell can point at an element. `ws_canvas_select` and `ws_canvas_hover` take a frame index and a diagnostic path (SPEC §6.1). A null path clears that one. An unknown element or a path that is not UTF-8 fails and leaves the previous value. Each success sends `changed` after the canvas is free, so the callback may read the state. The API version stays 0. The shells stay on one screen.
+
+Done when: selecting the account screen and hovering the login screen shows both in the state JSON, a missing path and a non-UTF-8 path fail, a null path clears either, and the callback reads the state during `changed`. No second surface is created.
+
+Result: as planned. Clearing does not need the frame to exist.
+

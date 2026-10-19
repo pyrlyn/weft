@@ -16,8 +16,9 @@ use serde_json::{Value as Json, json};
 use slint_bindings_ffi::{sb_host_frame_len, sb_host_free, sb_host_render};
 use weft_studio_ffi::WsCanvas;
 use weft_studio_ffi::abi::{
-    ws_canvas_free, ws_canvas_move, ws_canvas_open_dir, ws_canvas_save, ws_canvas_set_view,
-    ws_canvas_state_json, ws_canvas_surface_new, ws_last_error, ws_string_free,
+    ws_canvas_free, ws_canvas_hover, ws_canvas_move, ws_canvas_open_dir, ws_canvas_save,
+    ws_canvas_select, ws_canvas_set_view, ws_canvas_state_json, ws_canvas_surface_new,
+    ws_last_error, ws_string_free,
 };
 use weft_studio_ffi::{
     WS_CANVAS_NEXT, WS_CANVAS_NEXT_FRAME, WS_CANVAS_PARENT, WS_CANVAS_PREVIOUS_FRAME,
@@ -218,6 +219,8 @@ fn bad_input_fails_and_a_menu_stays_out_of_the_window() {
         assert!(!ws_canvas_set_view(ptr::null_mut(), 0.0, 0.0, 1.0));
         assert!(!ws_canvas_move(ptr::null_mut(), WS_CANVAS_NEXT));
         assert!(!ws_canvas_save(ptr::null_mut(), 0, ptr::null()));
+        assert!(!ws_canvas_select(ptr::null_mut(), 0, ptr::null()));
+        assert!(!ws_canvas_hover(ptr::null_mut(), 0, ptr::null()));
         assert!(ws_canvas_surface_new(ptr::null_mut(), 320, 240, 1.0).is_null());
 
         let canvas = open(&scratch.0, &mut slot);
@@ -244,6 +247,57 @@ fn bad_input_fails_and_a_menu_stays_out_of_the_window() {
         ws_canvas_free(ptr::null_mut());
     }
     assert!(slot.events.is_empty(), "a failed call is not an event");
+}
+
+#[test]
+fn selection_and_hover_name_an_element_or_clear() {
+    let scratch = Scratch::new("aim");
+    scratch.copy_screen("login", "login.weft");
+    scratch.copy_screen("account", "account.weft");
+    let mut slot = Slot {
+        canvas: ptr::null_mut(),
+        events: Vec::new(),
+        reread: false,
+    };
+    let canvas = open(&scratch.0, &mut slot);
+    let account = CString::new("/screen#account").unwrap();
+    let login = CString::new("/screen#login").unwrap();
+    let missing = CString::new("/screen#missing").unwrap();
+    let not_utf8 = CString::new(vec![b'/', 0xff]).unwrap();
+    // SAFETY: a live canvas and NUL-terminated strings. A null path clears.
+    unsafe {
+        assert!(
+            ws_canvas_select(canvas, 0, account.as_ptr()),
+            "{}",
+            last_error()
+        );
+        assert!(!ws_canvas_select(canvas, 0, missing.as_ptr()));
+        assert!(last_error().contains("no element"), "{}", last_error());
+        assert!(!ws_canvas_select(canvas, 0, not_utf8.as_ptr()));
+        assert!(last_error().contains("UTF-8"), "{}", last_error());
+        assert!(
+            ws_canvas_hover(canvas, 1, login.as_ptr()),
+            "{}",
+            last_error()
+        );
+    }
+    let aimed = state_of(canvas);
+    assert_eq!(aimed["selection"]["frame"], 0);
+    assert_eq!(aimed["selection"]["path"], "/screen#account");
+    assert_eq!(aimed["hover"]["frame"], 1);
+    assert_eq!(aimed["hover"]["path"], "/screen#login");
+    // SAFETY: a live canvas. Null clears.
+    unsafe {
+        assert!(ws_canvas_select(canvas, 0, ptr::null()));
+        assert!(ws_canvas_hover(canvas, 9, ptr::null()));
+    }
+    let cleared = state_of(canvas);
+    assert_eq!(cleared["selection"], Json::Null);
+    assert_eq!(cleared["hover"], Json::Null);
+    assert!(slot.reread, "changed did not re-enter");
+    assert_eq!(slot.events.len(), 4);
+    // SAFETY: freed once.
+    unsafe { ws_canvas_free(canvas) };
 }
 
 #[test]

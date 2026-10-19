@@ -123,6 +123,20 @@ bool ws_canvas_set_view(struct WsCanvas *canvas, double pan_x, double pan_y, dou
 // `canvas` is null or live.
 bool ws_canvas_move(struct WsCanvas *canvas, uint32_t direction);
 
+// Selects the element `path` on frame `frame` (0-based). A null `path` clears the selection.
+// An unknown element fails and leaves the selection. A `changed` event follows.
+//
+// # Safety
+// `canvas` is null or live; `path` is null or a NUL-terminated string.
+bool ws_canvas_select(struct WsCanvas *canvas, uint32_t frame, const char *path);
+
+// Hovers the element `path` on frame `frame` (0-based). A null `path` clears the hover. An
+// unknown element fails and leaves the hover. A `changed` event follows.
+//
+// # Safety
+// `canvas` is null or live; `path` is null or a NUL-terminated string.
+bool ws_canvas_hover(struct WsCanvas *canvas, uint32_t frame, const char *path);
+
 // Saves frame `frame` (0-based, in the order `ws_canvas_open_dir` opened) as canonical markup
 // to the UTF-8 `path`, or to its current path when `path` is null. A `changed` event follows.
 //

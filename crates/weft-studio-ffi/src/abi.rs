@@ -17,6 +17,19 @@ use crate::{
 
 /// # Safety
 /// `text` is null or a NUL-terminated string valid for the call.
+unsafe fn text_arg<'a>(text: *const c_char) -> Result<Option<&'a str>, String> {
+    if text.is_null() {
+        return Ok(None);
+    }
+    // SAFETY: forwarded caller contract.
+    let text = unsafe { CStr::from_ptr(text) };
+    text.to_str()
+        .map(Some)
+        .map_err(|_| "the element path is not valid UTF-8".into())
+}
+
+/// # Safety
+/// `text` is null or a NUL-terminated string valid for the call.
 unsafe fn path_arg<'a>(text: *const c_char) -> Result<&'a Path, String> {
     if text.is_null() {
         return Err("a null path was passed".into());
@@ -269,6 +282,50 @@ pub unsafe extern "C" fn ws_canvas_move(canvas: *mut WsCanvas, direction: u32) -
         let canvas = unsafe { canvas_mut(canvas)? };
         let direction = canvas_direction(direction)?;
         canvas.move_selection(direction);
+        let sink = canvas.sink;
+        sink.emit(&changed());
+        Ok(true)
+    })
+}
+
+/// Selects the element `path` on frame `frame` (0-based). A null `path` clears the selection.
+/// An unknown element fails and leaves the selection. A `changed` event follows.
+///
+/// # Safety
+/// `canvas` is null or live; `path` is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ws_canvas_select(
+    canvas: *mut WsCanvas,
+    frame: u32,
+    path: *const c_char,
+) -> bool {
+    guard(false, || {
+        // SAFETY: forwarded caller contract.
+        let canvas = unsafe { canvas_mut(canvas)? };
+        let path = unsafe { text_arg(path)? };
+        canvas.select(frame, path)?;
+        let sink = canvas.sink;
+        sink.emit(&changed());
+        Ok(true)
+    })
+}
+
+/// Hovers the element `path` on frame `frame` (0-based). A null `path` clears the hover. An
+/// unknown element fails and leaves the hover. A `changed` event follows.
+///
+/// # Safety
+/// `canvas` is null or live; `path` is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ws_canvas_hover(
+    canvas: *mut WsCanvas,
+    frame: u32,
+    path: *const c_char,
+) -> bool {
+    guard(false, || {
+        // SAFETY: forwarded caller contract.
+        let canvas = unsafe { canvas_mut(canvas)? };
+        let path = unsafe { text_arg(path)? };
+        canvas.hover(frame, path)?;
         let sink = canvas.sink;
         sink.emit(&changed());
         Ok(true)
