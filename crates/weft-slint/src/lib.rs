@@ -2,6 +2,7 @@
 //! component per screen for Slint 1.x and its `std-widgets.slint`, and `import_slint` reads such a
 //! file back into the Weft document it came from. `generate_embedded` prints the same screen as a
 //! component that does not inherit `Window`, so a host can place several screens in one surface.
+//! `compose` places those components in one `Canvas` window; dragging its background pans it.
 //! `read_slint` (feature `import`) reads a file `import_slint` rejects, from the Slint syntax tree.
 //! `runtime` (feature `runtime`) compiles the generated source with the Slint interpreter and fills
 //! it with sample data. The mapping is documented in this crate's README.

@@ -25,7 +25,7 @@ The crate is pure Rust over `weft-core` and `weft-catalog`. The Slint compiler (
 | --- | --- |
 | Source comment | `// weft:source slint` and the canonical markup, one line per comment line |
 | Imports | Only the std widgets the screen uses |
-| Component | `export component <Name>Screen inherits Window`, `title` from the screen's `label`. `generate_embedded` prints `component <Name>Screen inherits Rectangle` instead, not exported, so a host can place several screens in its own window: the role is `main`, `label` is `accessible-label`, the preferred size is the screen box's, and a `menu` is refused (`MenuBar` belongs to a `Window`). `compose` puts those components in one `Canvas` window; `pan-x`, `pan-y` and `zoom` move them |
+| Component | `export component <Name>Screen inherits Window`, `title` from the screen's `label`. `generate_embedded` prints `component <Name>Screen inherits Rectangle` instead, not exported, so a host can place several screens in its own window: the role is `main`, `label` is `accessible-label`, the preferred size is the screen box's, and a `menu` is refused (`MenuBar` belongs to a `Window`). `compose` puts those components in one `Canvas` window; `pan-x`, `pan-y` and `zoom` move them, and a left-pointer drag on the window background changes `pan-x` and `pan-y` |
 | Data | One `in-out property` per root data path a binding reads: `$.email` → `email`, `$.user.email` → `user-email` |
 | Actions | `callback perform(string, string)`: the action name and the id of the element |
 | Body | A `VerticalBox` named after the screen id, holding the elements |

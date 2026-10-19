@@ -2083,3 +2083,11 @@ Next slice of T69 milestone 2. `compose` assembles `generate_embedded` component
 
 Result: `compose` writes the import line, each component once, and `Canvas` with `pan-x`, `pan-y` and `zoom`. Rulers, selection, keyboard navigation and pointer pan stay open.
 
+### T69.2c. Pan the canvas by dragging its background
+
+Next slice of T69 milestone 2. `compose` already exposes `pan-x` and `pan-y`. A left-pointer drag on the window background sets them from the movement since the press, so a host does not have to write that gesture. The background is a `TouchArea` declared before the frames, so a control that takes the pointer keeps it. Done when a drag on empty background changes `pan-x` and `pan-y` by the pointer's movement, a second drag continues from the new origin, a drag that starts on a control does not, and the two-frame paint and the `Window` goldens stay unchanged.
+
+**Execution plan.** (1) SPEC §9, AGENT-SPEC §5 and the crate README, with the code. (2) The background `TouchArea` in `compose`. (3) A test that dispatches the pointer on an empty background and on a control. (4) `cargo fmt`, `cargo test -p weft-slint --test slint`, clippy.
+
+Result: dragging the background pans the canvas. Rulers, selection and keyboard navigation stay open.
+
