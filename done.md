@@ -1,5 +1,15 @@
 # Done
 
+### T69.2a. Embedded Slint screen
+
+First slice of T69 milestone 2. T69.1 renders one screen as a `Window`. Several screens on one surface need each screen as a plain component inside the editor's own window (the T69.1 card: `ComponentContainer` is not available in Slint 1.18.1 unless experimental features are on). Done when `generate_component` prints that component, a host window containing it compiles for every corpus screen that has no `menu`, a screen with a `menu` is refused, and `import_slint` still accepts only the `Window` form.
+
+`generate_component` (`crates/weft-slint`) prints the screen `generate` prints, without `export` and inheriting `Rectangle` instead of `Window`, with no window `title`. Properties and `perform` stay. A `menu` is refused (`GenerateError::Unsupported`): Slint 1.18 allows a `MenuBar` only as a direct child of a `Window` (https://docs.slint.dev/docs/slint/reference/window/window/#menubar, 1.18.1). SPEC §9 "To Slint", AGENT-SPEC and the crate README describe the form. The CLI stays on `generate`.
+
+Result: `an_embedded_screen_is_a_rectangle_inside_a_host_window` compiles every corpus screen and the controls fixture inside an exported host `Window`, and refuses `inbox` and `menu`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 2
+Check: `cargo test -p weft-slint --all-features --test slint`.
+
 ### T16.3. Layout vocabulary: web generators and the reference renderer
 
 T16 scope items 3 and 5 for the web, as the design's generate table says. Depends on T16.2.

@@ -1,5 +1,6 @@
 //! Slint for Weft (SPEC §9, "To Slint" and "From Slint"): `generate` prints one `.slint`
-//! component per screen for Slint 1.x and its `std-widgets.slint`, and `import_slint` reads such a
+//! component per screen for Slint 1.x and its `std-widgets.slint` (`generate_component` emits the
+//! same screen as a `Rectangle` a host window can contain), and `import_slint` reads such a
 //! file back into the Weft document it came from. `read_slint` (feature `import`) reads a file
 //! `import_slint` rejects, from the Slint syntax tree. `runtime` (feature `runtime`) compiles the
 //! generated source with the Slint interpreter and fills it with sample data. The mapping is
@@ -16,7 +17,7 @@ mod read_expr;
 #[cfg(feature = "runtime")]
 pub mod runtime;
 
-pub use generate::{GenerateError, GenerateOptions, generate};
+pub use generate::{GenerateError, GenerateOptions, generate, generate_component};
 pub use import::{ImportError, ImportOptions, MAX_SOURCE_LENGTH, import_slint};
 #[cfg(feature = "import")]
 pub use read::read_slint;
