@@ -2,6 +2,17 @@
 //! `.weft` file with the project above it (SPEC §10.1), saved canonical, and the input a Slint
 //! surface renders. No Slint crate here: the shells' FFI crate compiles the source with the
 //! `weft-slint` runtime, so this core stays testable on its own.
+//!
+//! [`ruler`](rulers::ruler) places the marks of a canvas ruler. Screen position is
+//! `canvas * zoom + pan`. The ticks are session state, and the surface that draws them is not
+//! in this crate.
+
+mod rulers;
+
+pub use rulers::{
+    Ruler, RulerError, Rulers, Span, Tick, TickRank, canvas_at, readout, ruler, rulers, screen_at,
+    span,
+};
 
 use std::io::Read;
 use std::path::{Path, PathBuf};

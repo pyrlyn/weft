@@ -1,5 +1,15 @@
 # Done
 
+### T69.2c. Canvas rulers
+
+Part of T69 milestone 2. The marks on a ruler are session state: a save still writes one screen's canonical markup. Done when a viewport edge yields major and minor ticks, labels, a cursor readout and the clipped span of a frame, without a Slint crate.
+
+`ruler` in `crates/weft-studio` takes a pan, a positive zoom and a viewport length. Screen position is `canvas * zoom + pan`, the mapping the canvas uses. The major step is the next 1, 2 or 5 times a power of ten that keeps at least 48 screen pixels between labels. Minor ticks subdivide that step and are dropped when they would sit closer than 8 pixels, or when the list would pass 4096 marks, in which case the step coarsens. `rulers` builds the horizontal and vertical edges of one viewport. `span` clips a frame's origin and extent to that edge. `readout` names the canvas coordinate under a screen position.
+
+Result: `crates/weft-studio/tests/rulers.rs`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 2
+Check: `cargo test -p weft-studio`.
+
 ### T16.3. Layout vocabulary: web generators and the reference renderer
 
 T16 scope items 3 and 5 for the web, as the design's generate table says. Depends on T16.2.
