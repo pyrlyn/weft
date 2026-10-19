@@ -14,6 +14,25 @@ typedef struct SbHost SbHost;
 // The version of the `ws_*` API and of the JSON it sends; a shell refuses any other.
 #define WS_API_VERSION 0
 
+// Keyboard movement of the canvas selection, the `direction` argument of `ws_canvas_move`.
+#define WS_CANVAS_NEXT 0
+
+// The previous element. With nothing selected, the selection stays put.
+#define WS_CANVAS_PREVIOUS 1
+
+// The parent element. The screen stays selected.
+#define WS_CANVAS_PARENT 2
+
+// The root of the next frame. With nothing selected, the first frame.
+#define WS_CANVAS_NEXT_FRAME 3
+
+// The root of the previous frame. With nothing selected, the selection stays put.
+#define WS_CANVAS_PREVIOUS_FRAME 4
+
+// Several screens as frames on one canvas (T69.3). Every call must come from the thread that
+// created it, the UI thread, as slint-bindings requires of its hosts.
+typedef struct WsCanvas WsCanvas;
+
 // One editor window's document. Every call must come from the thread that created it, the UI
 // thread, as slint-bindings requires of its hosts.
 typedef struct WsEditor WsEditor;
@@ -68,7 +87,83 @@ char *ws_state_json(const struct WsEditor *editor);
 // `editor` is null or live.
 SbHost *ws_surface_new(struct WsEditor *editor, uint32_t width, uint32_t height, float scale);
 
-// Frees a string from `ws_state_json`; null is ignored.
+// Opens every `.weft` file directly in the UTF-8 directory `path`, in file-name order, as one
+// canvas. Null, with a message in `ws_last_error`, when the directory cannot be read, holds no
+// `.weft` file, or a file has a syntax error. No `changed` event. Free with `ws_canvas_free`.
+//
+// # Safety
+// `path` is null or a NUL-terminated string. `on_event` may be null.
+struct WsCanvas *ws_canvas_open_dir(const char *path, WsEventFn on_event, void *user_data);
+
+// Frees a canvas; null is ignored. Surfaces made from it stay valid.
+//
+// # Safety
+// `canvas` is null or a live canvas from `ws_canvas_open_dir`, not used afterwards.
+void ws_canvas_free(struct WsCanvas *canvas);
+
+// The canvas state as JSON (`v`, `frames`, `pan_x`, `pan_y`, `zoom`, `selection`, `hover`).
+// Free with `ws_string_free`.
+//
+// # Safety
+// `canvas` is null or live.
+char *ws_canvas_state_json(const struct WsCanvas *canvas);
+
+// Sets pan and zoom. A non-finite pan leaves that axis; a non-finite zoom leaves the zoom; zoom
+// clamps to 1/4 through 4. A `changed` event follows.
+//
+// # Safety
+// `canvas` is null or live.
+bool ws_canvas_set_view(struct WsCanvas *canvas, double pan_x, double pan_y, double zoom);
+
+// Rounds pan to the nearest multiple of the 48px frame gap. Halfway rounds away from zero.
+// A `changed` event follows.
+//
+// # Safety
+// `canvas` is null or live.
+bool ws_canvas_snap(struct WsCanvas *canvas);
+
+// Moves the selection. `direction` is `WS_CANVAS_NEXT` (0), `WS_CANVAS_PREVIOUS` (1),
+// `WS_CANVAS_PARENT` (2), `WS_CANVAS_NEXT_FRAME` (3) or `WS_CANVAS_PREVIOUS_FRAME` (4). Anything
+// else fails and leaves the selection. A `changed` event follows a move.
+//
+// # Safety
+// `canvas` is null or live.
+bool ws_canvas_move(struct WsCanvas *canvas, uint32_t direction);
+
+// Selects the element `path` on frame `frame` (0-based). A null `path` clears the selection.
+// An unknown element fails and leaves the selection. A `changed` event follows.
+//
+// # Safety
+// `canvas` is null or live; `path` is null or a NUL-terminated string.
+bool ws_canvas_select(struct WsCanvas *canvas, uint32_t frame, const char *path);
+
+// Hovers the element `path` on frame `frame` (0-based). A null `path` clears the hover. An
+// unknown element fails and leaves the hover. A `changed` event follows.
+//
+// # Safety
+// `canvas` is null or live; `path` is null or a NUL-terminated string.
+bool ws_canvas_hover(struct WsCanvas *canvas, uint32_t frame, const char *path);
+
+// Saves frame `frame` (0-based, in the order `ws_canvas_open_dir` opened) as canonical markup
+// to the UTF-8 `path`, or to its current path when `path` is null. A `changed` event follows.
+//
+// # Safety
+// `canvas` is null or live; `path` is null or a NUL-terminated string.
+bool ws_canvas_save(struct WsCanvas *canvas, uint32_t frame, const char *path);
+
+// A new surface showing the canvas at `width`×`height` physical pixels and `scale`, drawn on
+// the CPU. The shell owns it: draw and feed it with the `sb_host_*` calls, free it with
+// `sb_host_free`. Null, with the generator's or the compiler's message, when nothing can be
+// drawn. `perform` arrives as an `action` event with `screen`, `action` and `id`.
+//
+// # Safety
+// `canvas` is null or live.
+SbHost *ws_canvas_surface_new(struct WsCanvas *canvas,
+                              uint32_t width,
+                              uint32_t height,
+                              float scale);
+
+// Frees a string from `ws_state_json` or `ws_canvas_state_json`; null is ignored.
 //
 // # Safety
 // `text` is null or a string from a `ws_*` call, not used afterwards.

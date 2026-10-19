@@ -1,6 +1,6 @@
 [package]
 name = "weft-studio-ffi"
-description = "The C ABI of WeftStudio, the desktop editor: the ws_* editor calls and the sb_* surface of slint-bindings in one library"
+description = "The C ABI of WeftStudio, the desktop editor: the ws_* editor and canvas calls and the sb_* surface of slint-bindings in one library"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

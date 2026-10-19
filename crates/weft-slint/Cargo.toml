@@ -48,5 +48,9 @@ required-features = ["runtime"]
 name = "runtime"
 required-features = ["runtime"]
 
+[[test]]
+name = "embed"
+required-features = ["import", "runtime"]
+
 [lints]
 workspace = true
