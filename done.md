@@ -2066,3 +2066,12 @@ Execution plan:
 3. Run the plugin build, clippy and tests, the nested audit, and the full repository merge gate. Close this card only after successful checks.
 
 Done: reused the existing shared host at merged commit `7fc02456ec732e6b742ffb8245ad78d5318e7b9d`; the nested lockfile now contains Wasmtime/WASI 49.0.3 and no Wasmtime 43. The nested RustSec audit changed from vulnerable to clean. Plugin build, strict host/guest clippy, all 21 plugin tests (including four end-to-end cases), and the full 38-task repository gate passed. No guest ABI, generated output, new dependency, or custom implementation was needed.
+
+### T69.2a. Embedded Slint components
+
+First slice of T69 milestone 2 (the canvas). T69.1 renders one screen as an exported `Window`. Several screens on one surface need each screen as a component inside the host's own window: Slint 1.18 has no `ComponentContainer` unless experimental features are on. `generate_embedded` prints `component <Name>Screen inherits Rectangle` (not exported), with the screen's `label` as `accessible-label`, the screen box filling that rectangle, and the component's preferred size taken from the box. A `menu` is refused, because a `MenuBar` is legal only in a `Window` (Slint 1.18). `generate`, `weft slint` and `import_slint` stay on the `Window` form, so there is no new `weft.json` key. Done when every corpus screen without a menu compiles inside a host `Window`, two of them compile in one file, the menu screen is refused and still generates as a `Window`, and the existing goldens are unchanged.
+
+**Execution plan.** (1) SPEC §9 "To Slint" and the `menu` row, AGENT-SPEC §5, and the crate README, in the same change as the code. (2) `generate_embedded` in `crates/weft-slint` sharing the generator with `generate`. (3) `tests/slint.rs`: every corpus screen and the controls fixture either compiles inside a host window or is refused only for a menu; `login` keeps its label and preferred size; `menu` is the only refusal; two screens compile as one file. (4) `cargo fmt`, `cargo test -p weft-slint --test slint`, clippy on the crate.
+
+Result: `generate_embedded` returns the component name, the sorted `std-widgets` imports and the component source. The `Window` goldens are unchanged. Pan, zoom, rulers and selection stay for later slices of milestone 2.
+
