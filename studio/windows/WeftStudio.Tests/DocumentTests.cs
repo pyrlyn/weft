@@ -96,6 +96,33 @@ public sealed class DocumentTests
     }
 
     [TestMethod]
+    public async Task Undo_restores_the_text_and_redo_puts_it_back()
+    {
+        using var scratch = new Scratch();
+        var screen = scratch.Write("screen.weft",
+            "<screen id=\"s\" weft=\"0.3\" label=\"Hi\"><text id=\"t\">Hi</text></screen>"u8.ToArray());
+        using var document = NewDocument(new FixedFilePicker(null));
+        Assert.IsFalse(document.Undo());
+        Assert.AreEqual("Open a screen first.", document.Error);
+        Assert.IsTrue(document.Open(screen), document.Error);
+        Assert.IsFalse(document.Undo());
+        Assert.IsNull(document.Error);
+        Assert.IsTrue(document.ApplyPatches("[{\"op\":\"set\",\"id\":\"t\",\"prop\":\"text\",\"value\":\"Bye\"}]"), document.Error);
+        Assert.IsTrue(document.State?.Dirty);
+        Assert.IsTrue(await document.SaveAsync(), document.Error);
+        StringAssert.Contains(File.ReadAllText(screen), ">Bye</text>");
+        Assert.IsTrue(document.Undo());
+        Assert.IsTrue(document.State?.Dirty);
+        Assert.IsTrue(await document.SaveAsync(), document.Error);
+        StringAssert.Contains(File.ReadAllText(screen), ">Hi</text>");
+        Assert.IsTrue(document.Redo());
+        Assert.IsTrue(await document.SaveAsync(), document.Error);
+        StringAssert.Contains(File.ReadAllText(screen), ">Bye</text>");
+        Assert.IsFalse(document.ApplyPatches("[{\"op\":\"set\",\"id\":\"gone\",\"prop\":\"text\",\"value\":\"x\"}]"));
+        StringAssert.Contains(document.Error, "W502");
+    }
+
+    [TestMethod]
     public void A_refused_open_reports_why_and_keeps_the_document()
     {
         using var scratch = new Scratch();

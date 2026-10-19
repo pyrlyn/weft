@@ -2082,3 +2082,11 @@ The document core from T69.3a, on the `ws_*` ABI the shells already load, withou
 **Execution plan.** (1) `WsEditor::edit`, `undo` and `redo` over the document core. (2) The three `ws_*` entry points, with the same pointer and thread checks as `ws_save`. (3) Regenerate `include/weft_studio.h` and the C# bindings. (4) `tests/e2e.rs`. No shell change: a menu that calls them is a later slice, and it needs the platform UI tests.
 
 Result: a list that changes the document returns true and sends `changed`. A list that applies but changes nothing, and undo or redo with nothing to do, return false and leave no error. A list that is not JSON, or that the core rejects, returns false with the message. API version stays 0.
+
+### T69.3d. Undo and redo in the shell menus
+
+The Edit menu on macOS and Windows calls `ws_undo` and `ws_redo`. A change replaces the Slint surface, because the surface was compiled from the document at open. Nothing to undo is not an error. A refused patch list keeps the document and shows the diagnostics. Done when each shell's document model undoes a text edit back to the bytes it opened with, and the menus send those calls.
+
+**Execution plan.** (1) `StudioDocument` and the Windows `Document` gain `applyPatches`, `undo` and `redo`. False with no message is a quiet no-op. (2) File stays as it is; Edit is Undo (⌘Z / Ctrl+Z) and Redo (⇧⌘Z / Ctrl+Y and Ctrl+Shift+Z). The Windows chord handler already matches every menu accelerator, which is what keeps a shortcut alive while the Slint panel has focus. (3) A change builds a new surface. (4) A model test on each platform. No SPEC change and no `weft.json` key.
+
+Result: both models record the edit, undo it, and redo it. The macOS window's surface is replaced when the document changes, and the Windows window builds a new panel. The layers tree and the inspector are still later slices.

@@ -1,6 +1,6 @@
-// WeftStudio for macOS (T69.1): one window per `.weft` document, the File menu, and the screen on
-// slint-bindings' `SlintNSView`. The window's value is the document's URL, so opening a file that
-// is already open brings its window forward instead of making a second one.
+// WeftStudio for macOS (T69.1): one window per `.weft` document, the File and Edit menus, and the
+// screen on slint-bindings' `SlintNSView`. The window's value is the document's URL, so opening a
+// file that is already open brings its window forward instead of making a second one.
 
 import SlintBindings
 import SwiftUI
@@ -56,6 +56,14 @@ struct FileCommands: Commands {
                 .disabled(document?.state == nil)
             Button("Save As…") { document?.saveAs(using: picker) }
                 .keyboardShortcut("s", modifiers: [.command, .shift])
+                .disabled(document?.state == nil)
+        }
+        CommandGroup(replacing: .undoRedo) {
+            Button("Undo") { document?.undo() }
+                .keyboardShortcut("z")
+                .disabled(document?.state == nil)
+            Button("Redo") { document?.redo() }
+                .keyboardShortcut("z", modifiers: [.command, .shift])
                 .disabled(document?.state == nil)
         }
     }

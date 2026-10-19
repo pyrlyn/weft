@@ -102,6 +102,33 @@ final class StudioDocument {
         return call { ws_save(editor, url.path) }
     }
 
+    /// Applies a patch list (SPEC §7) as JSON. A refusal keeps the document and sets `error`.
+    @discardableResult
+    func applyPatches(_ patches: String) -> Bool {
+        guard state != nil else { return needDocument() }
+        let changed = editStep { ws_apply_patches(editor, patches) }
+        if changed { reloadSurface() }
+        return changed
+    }
+
+    /// Undoes the latest edit. Nothing to undo leaves `error` nil.
+    @discardableResult
+    func undo() -> Bool {
+        guard state != nil else { return needDocument() }
+        let changed = editStep { ws_undo(editor) }
+        if changed { reloadSurface() }
+        return changed
+    }
+
+    /// Reapplies the edit `undo` reversed. Nothing to redo leaves `error` nil.
+    @discardableResult
+    func redo() -> Bool {
+        guard state != nil else { return needDocument() }
+        let changed = editStep { ws_redo(editor) }
+        if changed { reloadSurface() }
+        return changed
+    }
+
     /// The host is made at one pixel: `SlintNSView` resizes it to the view.
     private func surfaceHandle() throws(StudioError) -> OpaquePointer {
         guard let handle = ws_surface_new(editor, 1, 1, 1) else { throw StudioError.last() }
@@ -112,6 +139,37 @@ final class StudioDocument {
         if body() { return true }
         error = StudioError.last()
         return false
+    }
+
+    /// False from the ABI is a quiet no-op when it left no message, and an error when it did.
+    private func editStep(_ body: () -> Bool) -> Bool {
+        if body() {
+            error = nil
+            return true
+        }
+        guard let text = ws_last_error() else {
+            error = nil
+            return false
+        }
+        error = StudioError(message: String(cString: text))
+        return false
+    }
+
+    private func needDocument() -> Bool {
+        error = StudioError(message: "Open a screen first.")
+        return false
+    }
+
+    /// The open screen was compiled once. An edit needs a new host or the window keeps the old picture.
+    private func reloadSurface() {
+        surface = nil
+        do {
+            surface = try SlintHost(adopting: try surfaceHandle())
+        } catch let error as StudioError {
+            self.error = error
+        } catch {
+            self.error = StudioError(message: "\(error)")
+        }
     }
 
     private struct Event: Decodable {

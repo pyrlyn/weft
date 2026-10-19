@@ -75,6 +75,21 @@ public sealed unsafe class Editor : IDisposable
         fixed (byte* p = Utf8(path)) return NativeMethods.ws_save(Live(), p);
     }
 
+    /// <summary>
+    /// Applies a patch list (SPEC §7) as JSON. True when the document changed. False, with no
+    /// <see cref="LastError"/>, when the list applied and changed nothing.
+    /// </summary>
+    public bool ApplyPatches(string patchesJson)
+    {
+        fixed (byte* p = Utf8(patchesJson)) return NativeMethods.ws_apply_patches(Live(), p);
+    }
+
+    /// <summary>True when the document changed. False, with no <see cref="LastError"/>, when there is nothing to undo.</summary>
+    public bool Undo() => NativeMethods.ws_undo(Live());
+
+    /// <summary>True when the document changed. False, with no <see cref="LastError"/>, when there is nothing to redo.</summary>
+    public bool Redo() => NativeMethods.ws_redo(Live());
+
     /// <summary>A new <c>SbHost*</c> showing the open screen; the caller owns it (<c>SlintHost.Adopt</c>).</summary>
     public IntPtr NewSurface(int pixelWidth, int pixelHeight, float scale)
     {
@@ -83,8 +98,14 @@ public sealed unsafe class Editor : IDisposable
         return (IntPtr)host;
     }
 
-    public static string LastError() =>
-        Marshal.PtrToStringUTF8((IntPtr)NativeMethods.ws_last_error()) ?? "unknown error";
+    public static string LastError() => LastErrorOrNull() ?? "unknown error";
+
+    /// <summary>Null when the last call left no message, including a quiet undo or redo.</summary>
+    public static string? LastErrorOrNull()
+    {
+        var text = NativeMethods.ws_last_error();
+        return text == null ? null : Marshal.PtrToStringUTF8((IntPtr)text);
+    }
 
     public void Dispose()
     {

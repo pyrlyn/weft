@@ -44,6 +44,10 @@ public sealed partial class MainWindow : Window
 
     private async void OnSaveAs(object sender, RoutedEventArgs e) => await Saved(await _document.SaveAsAsync());
 
+    private async void OnUndo(object sender, RoutedEventArgs e) => await Edited(_document.Undo());
+
+    private async void OnRedo(object sender, RoutedEventArgs e) => await Edited(_document.Redo());
+
     private void OnMenuChord(object sender, KeyRoutedEventArgs e)
     {
         var modifiers = Modifiers();
@@ -73,6 +77,13 @@ public sealed partial class MainWindow : Window
     private async Task Saved(bool saved)
     {
         if (!saved) await ShowError();
+    }
+
+    /// <summary>A change draws the screen again. Nothing to undo is quiet. A refusal opens the dialog.</summary>
+    private async Task Edited(bool changed)
+    {
+        if (changed) ShowSurface();
+        else if (_document.Error is not null) await ShowError();
     }
 
     /// <summary>A new panel per document; the old one frees its host when it unloads.</summary>

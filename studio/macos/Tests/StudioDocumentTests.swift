@@ -124,6 +124,33 @@ struct StudioDocumentTests {
         #expect(error.details.contains("shade"), "\(error.message)")
     }
 
+    @Test func undoRestoresTheTextAndRedoPutsItBack() throws {
+        let dir = try scratch()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let path = dir.appending(path: "screen.weft")
+        let original = #"<screen id="s" weft="0.3" label="Hi"><text id="t">Hi</text></screen>"#
+        try Data(original.utf8).write(to: path)
+        let document = StudioDocument()
+        #expect(!document.undo())
+        #expect(document.error?.message == "Open a screen first.")
+        #expect(document.open(path))
+        #expect(!document.undo())
+        #expect(document.error == nil)
+        #expect(document.applyPatches(#"[{"op":"set","id":"t","prop":"text","value":"Bye"}]"#))
+        #expect(document.error == nil)
+        #expect(document.save())
+        #expect(try String(contentsOf: path, encoding: .utf8).contains(">Bye</text>"))
+        #expect(document.undo())
+        #expect(document.save())
+        #expect(try String(contentsOf: path, encoding: .utf8).contains(">Hi</text>"))
+        #expect(document.redo())
+        #expect(document.save())
+        #expect(try String(contentsOf: path, encoding: .utf8).contains(">Bye</text>"))
+        #expect(!document.applyPatches(#"[{"op":"set","id":"gone","prop":"text","value":"x"}]"#))
+        let error = try #require(document.error)
+        #expect(error.message.contains("W502"), "\(error.message)")
+    }
+
     @Test func theLaunchScreenComesFromTheArgumentDomain() throws {
         let suite = "weft-studio-tests-\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))

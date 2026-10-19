@@ -58,6 +58,15 @@ public sealed class Document(Editor editor, IFilePicker picker) : IDisposable
     public IntPtr NewSurface(int pixelWidth, int pixelHeight, float scale) =>
         editor.NewSurface(pixelWidth, pixelHeight, scale);
 
+    /// <summary>True when the document changed. A refusal sets <see cref="Error"/> and changes nothing.</summary>
+    public bool ApplyPatches(string patchesJson) => Edit(() => editor.ApplyPatches(patchesJson));
+
+    /// <summary>True when an edit was undone. Nothing to undo leaves <see cref="Error"/> null.</summary>
+    public bool Undo() => Edit(editor.Undo);
+
+    /// <summary>True when an edit was redone. Nothing to redo leaves <see cref="Error"/> null.</summary>
+    public bool Redo() => Edit(editor.Redo);
+
     public void Dispose() => editor.Dispose();
 
     private bool Save(string? path)
@@ -70,5 +79,14 @@ public sealed class Document(Editor editor, IFilePicker picker) : IDisposable
     {
         Error = message;
         return false;
+    }
+
+    /// <summary>False from the ABI is a quiet no-op when it left no message.</summary>
+    private bool Edit(Func<bool> body)
+    {
+        Error = null;
+        if (!IsOpen) return Fail("Open a screen first.");
+        if (body()) return true;
+        return Editor.LastErrorOrNull() is { } message ? Fail(message) : false;
     }
 }

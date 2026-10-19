@@ -109,9 +109,11 @@ The native shell and the shared surface talk only through the slint-bindings C A
 5. Round trip with the outside: the saved files stay canonical (`weft fmt` leaves them unchanged), the existing exporters (SwiftUI, web, Slint, A2UI) run from the native menus, and files edited by agents or by hand reload without losing the selection where ids still exist.
 6. Packaging: signed builds for macOS (arm64 only) and Windows x86_64, with the toolchain rows in `toolchain.md`.
 
-T69.3a, the first slice of milestone 3, is done (`done.md`): `Editor::edit` applies a patch list (SPEC §7) with the project's catalog, tokens and actions, records that list, and `undo` / `redo` restore the document on either side. `dirty` is true when the open document differs from the last open or successful save. The shells still do not edit. The canvas, the layers tree and the inspector stay open.
+T69.3a, the first slice of milestone 3, is done (`done.md`): `Editor::edit` applies a patch list (SPEC §7) with the project's catalog, tokens and actions, records that list, and `undo` / `redo` restore the document on either side. `dirty` is true when the open document differs from the last open or successful save.
 
-T69.3c is done (`done.md`): `ws_apply_patches`, `ws_undo` and `ws_redo` expose that core on the C ABI (API version stays 0). The macOS and Windows shells still do not call them.
+T69.3c is done (`done.md`): `ws_apply_patches`, `ws_undo` and `ws_redo` expose that core on the C ABI. The API version stays 0.
+
+T69.3d is done (`done.md`): the Edit menu on both shells undoes and redoes, and redraws the screen when the document changed. The layers tree and the inspector stay open.
 
 **Acceptance criteria.**
 
