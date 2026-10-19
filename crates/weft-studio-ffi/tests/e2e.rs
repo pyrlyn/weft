@@ -21,8 +21,8 @@ use slint_bindings_ffi::{
 };
 use weft_studio_ffi::WsEditor;
 use weft_studio_ffi::abi::{
-    ws_api_version, ws_editor_free, ws_editor_new, ws_last_error, ws_open, ws_save, ws_state_json,
-    ws_string_free, ws_surface_new,
+    ws_api_version, ws_apply_patches, ws_editor_free, ws_editor_new, ws_last_error, ws_open,
+    ws_redo, ws_save, ws_state_json, ws_string_free, ws_surface_new, ws_undo,
 };
 
 const CORPUS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../corpus");
@@ -69,6 +69,10 @@ impl Drop for Scratch {
 
 fn c(path: &Path) -> CString {
     CString::new(path.to_str().unwrap()).unwrap()
+}
+
+fn json_text(text: &str) -> CString {
+    CString::new(text).unwrap()
 }
 
 fn last_error() -> String {
@@ -214,6 +218,80 @@ fn a_save_round_trips_through_the_abi() {
             .iter()
             .all(|e| *e == json!({ "v": 0, "type": "changed" }))
     );
+}
+
+#[test]
+fn a_patch_undo_and_redo_go_through_the_abi() {
+    let scratch = Scratch::new("edit");
+    let screen = scratch.write(
+        "screen.weft",
+        br#"<screen id="s" weft="0.3" label="Hi"><text id="t">Hi</text></screen>"#,
+    );
+    let copy = scratch.0.join("out.weft");
+    let mut events = Vec::new();
+    let editor = editor(&mut events);
+    let bye = json_text(r#"[{"op":"set","id":"t","prop":"text","value":"Bye"}]"#);
+    let same = json_text(r#"[{"op":"set","id":"t","prop":"text","value":"Bye"}]"#);
+    let missing = json_text(r#"[{"op":"set","id":"gone","prop":"text","value":"x"}]"#);
+    let not_json = json_text("not json");
+    // SAFETY: a live editor and NUL-terminated strings; each pointer is freed once.
+    unsafe {
+        assert!(!ws_apply_patches(editor, bye.as_ptr()));
+        assert!(last_error().contains("no document"), "{}", last_error());
+        assert!(!ws_undo(editor));
+        assert!(last_error().contains("no document"), "{}", last_error());
+        assert!(!ws_apply_patches(ptr::null_mut(), bye.as_ptr()));
+        assert!(last_error().contains("null editor"), "{}", last_error());
+
+        assert!(ws_open(editor, c(&screen).as_ptr()), "{}", last_error());
+        assert_eq!(state(editor)["dirty"], false);
+        assert!(!ws_undo(editor));
+        assert!(ws_last_error().is_null());
+        assert!(!ws_redo(editor));
+        assert!(ws_last_error().is_null());
+
+        assert!(ws_apply_patches(editor, bye.as_ptr()), "{}", last_error());
+        assert_eq!(state(editor)["dirty"], true);
+        assert!(ws_save(editor, c(&copy).as_ptr()), "{}", last_error());
+        assert!(
+            std::fs::read_to_string(&copy)
+                .unwrap()
+                .contains(">Bye</text>")
+        );
+        assert_eq!(state(editor)["dirty"], false);
+
+        assert!(ws_undo(editor));
+        assert_eq!(state(editor)["dirty"], true);
+        assert!(ws_redo(editor));
+        assert_eq!(state(editor)["dirty"], false);
+
+        assert!(!ws_apply_patches(editor, missing.as_ptr()));
+        let message = last_error();
+        assert!(message.contains("W502"), "{message}");
+        assert_eq!(state(editor)["dirty"], false);
+
+        assert!(!ws_apply_patches(editor, same.as_ptr()));
+        assert!(ws_last_error().is_null());
+        assert!(!ws_apply_patches(editor, ptr::null()));
+        assert!(last_error().contains("null patch list"), "{}", last_error());
+        assert!(!ws_apply_patches(editor, not_json.as_ptr()));
+        assert!(last_error().contains("not JSON"), "{}", last_error());
+        let saved = std::fs::read_to_string(&copy).unwrap();
+        assert!(saved.contains(">Bye</text>"), "{saved}");
+
+        assert!(ws_undo(editor));
+        assert!(!ws_undo(editor));
+        assert!(ws_last_error().is_null());
+        assert!(ws_redo(editor));
+        ws_editor_free(editor);
+    }
+    assert!(
+        events
+            .iter()
+            .all(|event| *event == json!({ "v": 0, "type": "changed" }))
+    );
+    // open, the edit, the save, undo, redo, undo, redo. A refusal and a no-op send nothing.
+    assert_eq!(events.len(), 7, "{events:?}");
 }
 
 #[test]
@@ -367,6 +445,8 @@ fn the_macos_static_library_exports_ws_and_sb_calls() {
     let symbols = String::from_utf8_lossy(&nm.stdout);
     for name in [
         "_ws_open",
+        "_ws_apply_patches",
+        "_ws_undo",
         "_ws_surface_new",
         "_sb_host_render",
         "_sb_host_free",

@@ -111,6 +111,82 @@ pub unsafe extern "C" fn ws_save(editor: *mut WsEditor, path: *const c_char) -> 
     })
 }
 
+/// Applies a patch list (SPEC §7), UTF-8 JSON, with the open document's project. False when no
+/// document is open, the text is not JSON, or the list is rejected: the document stays and
+/// `ws_last_error` holds the diagnostics. A list that applies without changing the document
+/// returns false and leaves no error. A change sends `changed`.
+///
+/// # Safety
+/// `editor` is null or live; `patches_json` is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ws_apply_patches(
+    editor: *mut WsEditor,
+    patches_json: *const c_char,
+) -> bool {
+    guard(false, || {
+        // SAFETY: forwarded caller contract.
+        let (editor, text) = unsafe { (editor_mut(editor)?, text_arg(patches_json)?) };
+        let patches =
+            serde_json::from_str(text).map_err(|_| "the patch list is not JSON".to_owned())?;
+        let changed_document = editor.edit(&patches)?;
+        if changed_document {
+            let sink = editor.sink;
+            sink.emit(&changed());
+        }
+        Ok(changed_document)
+    })
+}
+
+/// Undoes the latest recorded edit. False, and no error, when there is nothing to undo. A change
+/// sends `changed`.
+///
+/// # Safety
+/// `editor` is null or live.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ws_undo(editor: *mut WsEditor) -> bool {
+    guard(false, || {
+        // SAFETY: forwarded caller contract.
+        let editor = unsafe { editor_mut(editor)? };
+        let changed_document = editor.undo()?;
+        if changed_document {
+            let sink = editor.sink;
+            sink.emit(&changed());
+        }
+        Ok(changed_document)
+    })
+}
+
+/// Reapplies the edit `ws_undo` reversed. False, and no error, when there is nothing to redo.
+/// A change sends `changed`.
+///
+/// # Safety
+/// `editor` is null or live.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ws_redo(editor: *mut WsEditor) -> bool {
+    guard(false, || {
+        // SAFETY: forwarded caller contract.
+        let editor = unsafe { editor_mut(editor)? };
+        let changed_document = editor.redo()?;
+        if changed_document {
+            let sink = editor.sink;
+            sink.emit(&changed());
+        }
+        Ok(changed_document)
+    })
+}
+
+/// # Safety
+/// `text` is null or a NUL-terminated string valid for the call.
+unsafe fn text_arg<'a>(text: *const c_char) -> Result<&'a str, String> {
+    if text.is_null() {
+        return Err("a null patch list was passed".into());
+    }
+    // SAFETY: forwarded caller contract.
+    let text = unsafe { CStr::from_ptr(text) };
+    text.to_str()
+        .map_err(|_| "the patch list is not valid UTF-8".into())
+}
+
 /// The open document's state as JSON (`v`, `path`, `title`, `screen`, `dirty`, `diagnostics`,
 /// `project`, `project_diagnostics`). Null without a document. Free with `ws_string_free`.
 ///

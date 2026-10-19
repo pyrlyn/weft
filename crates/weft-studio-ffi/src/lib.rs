@@ -19,7 +19,7 @@ use serde_json::{Value as Json, json};
 use slint_bindings_ffi::SbHost;
 use slint_interpreter::Value;
 use weft_slint::GenerateError;
-use weft_studio::{Editor, EditorError};
+use weft_studio::{EditReport, Editor, EditorError};
 
 #[allow(unsafe_code)]
 pub mod abi;
@@ -150,6 +150,36 @@ impl WsEditor {
         editor.save(path).map_err(describe)
     }
 
+    /// Applies a patch list. `Ok(true)` when the document changed, `Ok(false)` when the list
+    /// applied and changed nothing. A refusal is the diagnostics, one per line.
+    fn edit(&mut self, patches: &Json) -> Result<bool, String> {
+        let editor = self
+            .editor
+            .as_mut()
+            .ok_or_else(|| "no document is open".to_owned())?;
+        let report = editor.edit(patches);
+        if !report.applied {
+            return Err(refusal(&report));
+        }
+        Ok(report.changed)
+    }
+
+    fn undo(&mut self) -> Result<bool, String> {
+        let editor = self
+            .editor
+            .as_mut()
+            .ok_or_else(|| "no document is open".to_owned())?;
+        Ok(editor.undo())
+    }
+
+    fn redo(&mut self) -> Result<bool, String> {
+        let editor = self
+            .editor
+            .as_mut()
+            .ok_or_else(|| "no document is open".to_owned())?;
+        Ok(editor.redo())
+    }
+
     fn state_json(&self) -> Result<String, String> {
         serde_json::to_string(&Versioned {
             v: WS_API_VERSION,
@@ -186,6 +216,26 @@ impl WsEditor {
             .map_err(|e| format!("the generated screen has no perform callback: {e}"))?;
         Ok(host)
     }
+}
+
+/// A rejected patch list, as text a shell can show. The codes stay, so a host can still match them.
+fn refusal(report: &EditReport) -> String {
+    if report.diagnostics.is_empty() {
+        return "the patch list was rejected".to_owned();
+    }
+    let mut text = String::new();
+    for (i, diagnostic) in report.diagnostics.iter().enumerate() {
+        if i > 0 {
+            text.push('\n');
+        }
+        text.push_str(&format!(
+            "{} {}: {}",
+            diagnostic.code.as_str(),
+            diagnostic.path,
+            diagnostic.message
+        ));
+    }
+    text
 }
 
 /// The error and its causes on one line, then the diagnostics behind a syntax error or a refused

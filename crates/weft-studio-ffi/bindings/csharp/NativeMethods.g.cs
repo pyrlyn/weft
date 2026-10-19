@@ -68,6 +68,41 @@ namespace WeftStudio.Native
         internal static extern bool ws_save(WsEditor* editor, byte* path);
 
         /// <summary>
+        ///  Applies a patch list (SPEC §7), UTF-8 JSON, with the open document's project. False when no
+        ///  document is open, the text is not JSON, or the list is rejected: the document stays and
+        ///  `ws_last_error` holds the diagnostics. A list that applies without changing the document
+        ///  returns false and leaves no error. A change sends `changed`.
+        ///
+        ///  # Safety
+        ///  `editor` is null or live; `patches_json` is null or a NUL-terminated string.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "ws_apply_patches", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static extern bool ws_apply_patches(WsEditor* editor, byte* patches_json);
+
+        /// <summary>
+        ///  Undoes the latest recorded edit. False, and no error, when there is nothing to undo. A change
+        ///  sends `changed`.
+        ///
+        ///  # Safety
+        ///  `editor` is null or live.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "ws_undo", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static extern bool ws_undo(WsEditor* editor);
+
+        /// <summary>
+        ///  Reapplies the edit `ws_undo` reversed. False, and no error, when there is nothing to redo.
+        ///  A change sends `changed`.
+        ///
+        ///  # Safety
+        ///  `editor` is null or live.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "ws_redo", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static extern bool ws_redo(WsEditor* editor);
+
+        /// <summary>
         ///  The open document's state as JSON (`v`, `path`, `title`, `screen`, `dirty`, `diagnostics`,
         ///  `project`, `project_diagnostics`). Null without a document. Free with `ws_string_free`.
         ///
