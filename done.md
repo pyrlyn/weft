@@ -2066,3 +2066,14 @@ Execution plan:
 3. Run the plugin build, clippy and tests, the nested audit, and the full repository merge gate. Close this card only after successful checks.
 
 Done: reused the existing shared host at merged commit `7fc02456ec732e6b742ffb8245ad78d5318e7b9d`; the nested lockfile now contains Wasmtime/WASI 49.0.3 and no Wasmtime 43. The nested RustSec audit changed from vulnerable to clean. Plugin build, strict host/guest clippy, all 21 plugin tests (including four end-to-end cases), and the full 38-task repository gate passed. No guest ABI, generated output, new dependency, or custom implementation was needed.
+
+### T69.3b. Layers list and inspector read
+
+First read-only slice of T69 milestone 3. The layers panel and the property inspector need the open screen's elements by the same paths diagnostics use (SPEC §6.1), before either one writes a patch. `Editor::layers` lists every element in document order: the element, then its children, then each slot. `Editor::inspect` returns that element's kind, id, props, events and direct children. A path that is not in the document reads as nothing. Saving is unchanged, and there is no new `weft.json` key. Done when login's rows and the submit button's binding match the markup, a missing path reads as nothing, and every corpus screen lists the same elements as `element_paths`.
+
+**Execution plan.** (1) `layers` in `crates/weft-studio`, using `path_segment` so the names match diagnostics. (2) Tests over login and the corpus. (3) `cargo fmt`, `cargo test -p weft-studio --test layers`, clippy. No SPEC change: the paths already exist.
+
+Result: the list and the read. The canvas, selection from a point, and writing a patch stay open.
+
+Model: Cursor / Grok 4.7 · Status: done · Priority: P2 · Complexity: 2
+Check: `cargo test -p weft-studio --test layers`.

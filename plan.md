@@ -109,6 +109,8 @@ The native shell and the shared surface talk only through the slint-bindings C A
 5. Round trip with the outside: the saved files stay canonical (`weft fmt` leaves them unchanged), the existing exporters (SwiftUI, web, Slint, A2UI) run from the native menus, and files edited by agents or by hand reload without losing the selection where ids still exist.
 6. Packaging: signed builds for macOS (arm64 only) and Windows x86_64, with the toolchain rows in `toolchain.md`.
 
+T69.3b is done (`done.md`): `Editor::layers` lists every element in document order by its diagnostic path, and `Editor::inspect` reads that element's props, events and children. The canvas and writing a patch stay open.
+
 **Acceptance criteria.**
 
 - The same Slint editing surface code runs inside the SwiftUI app on macOS and inside the WinUI 3 app on Windows through slint-bindings, with no editor-specific embedding code in either shell.

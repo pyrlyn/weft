@@ -16,6 +16,10 @@ use weft_catalog::{
 use weft_core::{Catalog, Diagnostic, Document, Mode, ParseOptions, parse, parse_json, serialize};
 use weft_slint::{GenerateError, GenerateOptions, MAX_SOURCE_LENGTH, generate};
 
+mod layers;
+
+pub use layers::{Inspection, Layer};
+
 /// The largest file `open` reads: the screen's markup travels inside the generated Slint source,
 /// so the bound `weft-slint` puts on Slint input is the bound here.
 pub const MAX_FILE_BYTES: usize = MAX_SOURCE_LENGTH;
@@ -166,6 +170,16 @@ impl Editor {
                 .map(|open| open.diagnostics.clone())
                 .unwrap_or_default(),
         }
+    }
+
+    /// The open screen's elements in document order, named by diagnostic path (SPEC §6.1).
+    pub fn layers(&self) -> Vec<Layer> {
+        layers::layers(&self.document)
+    }
+
+    /// One element's kind, props, events and direct children, or nothing when `path` is absent.
+    pub fn inspect(&self, path: &str) -> Option<Inspection> {
+        layers::inspect(&self.document, path)
     }
 
     /// The screen as Slint, and the project's `render.data` sample data (SPEC §10.6) when set.
