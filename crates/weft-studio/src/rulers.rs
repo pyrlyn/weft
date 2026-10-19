@@ -1,4 +1,4 @@
-//! Rulers for the canvas (T69 milestone 2). Tick positions are session state: a save still
+//! Rulers for the canvas (T69.2d, milestone 2). Tick positions are session state: a save still
 //! writes one screen's canonical markup and nothing about the view.
 //!
 //! Pointer coordinates are in screen space. A design coordinate is in canvas space, and the two

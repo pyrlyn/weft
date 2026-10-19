@@ -1,6 +1,6 @@
 # Done
 
-### T69.2c. Canvas rulers
+### T69.2d. Canvas rulers
 
 Part of T69 milestone 2. The marks on a ruler are session state: a save still writes one screen's canonical markup. Done when a viewport edge yields major and minor ticks, labels, a cursor readout and the clipped span of a frame, without a Slint crate.
 

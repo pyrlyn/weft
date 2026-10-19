@@ -103,7 +103,7 @@ The native shell and the shared surface talk only through the slint-bindings C A
 **Milestones** (each becomes a T69.x task with its own plan when claimed, within the task size rule):
 
 1. Skeleton: a native window on each platform hosting one Slint surface through slint-bindings, showing one corpus screen rendered by `weft-slint`; open and save through the native file dialogs.
-2. Canvas: several screens as frames, pan and zoom, rulers, selection and hover from the Weft element tree, keyboard navigation. T69.2c, the ruler model in `weft-studio` (major and minor ticks, labels, the span a frame covers), is done (`done.md`). The Slint surface that draws the frames and the rulers is still open.
+2. Canvas: several screens as frames, pan and zoom, rulers, selection and hover from the Weft element tree, keyboard navigation. T69.2d, the ruler model in `weft-studio` (major and minor ticks, labels, the span a frame covers), is done (`done.md`). The Slint surface that draws the frames and the rulers is still open.
 3. Editing: move, reorder, insert and delete elements, resize within the layout rules, the layers tree and the property inspector writing Weft patches; undo and redo; validation diagnostics shown on the canvas and in the inspector.
 4. Components and tokens: the catalog panel, catalog-extension kinds as components, design tokens from the project (spacing, colours, typography) in the inspector, the light and dark appearances.
 5. Round trip with the outside: the saved files stay canonical (`weft fmt` leaves them unchanged), the existing exporters (SwiftUI, web, Slint, A2UI) run from the native menus, and files edited by agents or by hand reload without losing the selection where ids still exist.
