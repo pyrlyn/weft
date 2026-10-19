@@ -2066,3 +2066,11 @@ Execution plan:
 3. Run the plugin build, clippy and tests, the nested audit, and the full repository merge gate. Close this card only after successful checks.
 
 Done: reused the existing shared host at merged commit `7fc02456ec732e6b742ffb8245ad78d5318e7b9d`; the nested lockfile now contains Wasmtime/WASI 49.0.3 and no Wasmtime 43. The nested RustSec audit changed from vulnerable to clean. Plugin build, strict host/guest clippy, all 21 plugin tests (including four end-to-end cases), and the full 38-task repository gate passed. No guest ABI, generated output, new dependency, or custom implementation was needed.
+
+### T69.3a. Undo and redo of document patches
+
+First slice of T69 milestone 3 (editing). The document core could open and save one screen, and `dirty` was always false. An edit has to be a Weft patch (SPEC §7), so undo and redo restore the exact document and the patch list is what was applied. The shells, the canvas, the layers tree and the inspector are later slices. Done when a rejected list leaves the document untouched, undo and redo restore either side, a new edit clears redo, `dirty` tracks the last open or successful save, and every corpus screen undoes a label edit back to the bytes it opened with.
+
+**Execution plan.** (1) `Editor::edit`, `undo`, `redo` and `edits` in `crates/weft-studio`, using `apply_patches` with the project's catalog, tokens and actions in the lenient mode `open` uses. No `author`: the host that speaks for a person sets that. (2) `dirty` compares the open document with the one from the last open or successful save. A failed save changes neither. (3) The newest 100 edits are kept. (4) `tests/edit.rs`. No SPEC change and no `weft.json` key: this is not a format change and not a user setting. The `ws_*` ABI is unchanged, so the shells still do not edit.
+
+Result: `edit` returns whether the list applied and whether the document changed. A list that does not validate, names a missing id, or breaks the patch shape is not recorded. An empty list and a `set` of the current value are not edits. `undo` and `redo` put back the document from that side and revalidate it. `markup` is the canonical text without writing the file.

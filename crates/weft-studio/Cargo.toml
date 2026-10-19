@@ -1,6 +1,6 @@
 [package]
 name = "weft-studio"
-description = "The document core of WeftStudio, the desktop editor: open, save and the render input of a Weft screen"
+description = "The document core of WeftStudio, the desktop editor: open, save, patches and the render input of a Weft screen"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
