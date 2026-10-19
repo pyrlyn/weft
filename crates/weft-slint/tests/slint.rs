@@ -9,7 +9,6 @@
 mod common;
 
 use i_slint_core::input::key_codes::LeftArrow;
-use i_slint_core::items::PointerEventButton;
 use i_slint_core::platform::WindowEvent;
 use slint_interpreter::{ComponentHandle, LogicalPosition, PhysicalSize, SharedString, Value};
 use weft_catalog::token_types;
@@ -515,7 +514,108 @@ fn a_canvas_of_two_screens_compiles_and_paints_both() {
 }
 
 #[test]
-fn the_canvas_chrome_pans_zooms_and_draws_rulers() {
+fn dragging_the_canvas_background_pans_it() {
+    let block = EmbeddedComponent {
+        name: "BlockScreen".into(),
+        imports: vec![],
+        source: "\
+component BlockScreen inherits Rectangle {
+    background: red;
+    preferred-width: 100px;
+    preferred-height: 80px;
+    control := TouchArea { width: 100%; height: 100%; }
+}
+"
+        .into(),
+    };
+    let source = compose(&[CanvasFrame {
+        component: &block,
+        x: 200.0,
+        y: 40.0,
+        width: 100.0,
+    }])
+    .unwrap();
+    let touch = source.find("touch := TouchArea").unwrap();
+    let frame = source.find("frame-0 := BlockScreen").unwrap();
+    assert!(touch < frame, "the background sits behind the frames");
+    let (errors, built) = compile(&source, "Canvas");
+    assert!(errors.is_empty() && built, "{errors:#?}\n{source}");
+
+    ensure_backend();
+    let instance = runtime::compile(&source, "fluent")
+        .unwrap()
+        .create()
+        .unwrap();
+    let window = instance.window();
+    window.set_size(slint_interpreter::PhysicalSize::new(800, 600));
+    // Layout runs with the snapshot, so the frame has a size before the pointer arrives.
+    window.take_snapshot().unwrap();
+
+    let at = |x, y| i_slint_core::api::LogicalPosition::new(x, y);
+    let left = i_slint_core::items::PointerEventButton::Left;
+    let right = i_slint_core::items::PointerEventButton::Right;
+    let send = |event| window.dispatch_event(event);
+    let pan = || {
+        (
+            instance.get_property("pan-x").unwrap(),
+            instance.get_property("pan-y").unwrap(),
+        )
+    };
+    let number = slint_interpreter::Value::Number;
+
+    send(i_slint_core::platform::WindowEvent::PointerPressed {
+        position: at(20.0, 20.0),
+        button: right,
+    });
+    send(i_slint_core::platform::WindowEvent::PointerMoved {
+        position: at(90.0, 90.0),
+    });
+    assert_eq!(pan(), (number(0.0), number(0.0)));
+    send(i_slint_core::platform::WindowEvent::PointerReleased {
+        position: at(90.0, 90.0),
+        button: right,
+    });
+
+    // The frame's own TouchArea covers (200, 40) at 100 by 80, so this drag is not the background.
+    send(i_slint_core::platform::WindowEvent::PointerPressed {
+        position: at(220.0, 60.0),
+        button: left,
+    });
+    send(i_slint_core::platform::WindowEvent::PointerMoved {
+        position: at(280.0, 100.0),
+    });
+    assert_eq!(pan(), (number(0.0), number(0.0)));
+    send(i_slint_core::platform::WindowEvent::PointerReleased {
+        position: at(280.0, 100.0),
+        button: left,
+    });
+
+    send(i_slint_core::platform::WindowEvent::PointerPressed {
+        position: at(20.0, 20.0),
+        button: left,
+    });
+    send(i_slint_core::platform::WindowEvent::PointerMoved {
+        position: at(70.0, 50.0),
+    });
+    assert_eq!(pan(), (number(50.0), number(30.0)));
+    assert_eq!(instance.get_property("zoom").unwrap(), number(1.0));
+    send(i_slint_core::platform::WindowEvent::PointerReleased {
+        position: at(70.0, 50.0),
+        button: left,
+    });
+
+    send(i_slint_core::platform::WindowEvent::PointerPressed {
+        position: at(70.0, 50.0),
+        button: left,
+    });
+    send(i_slint_core::platform::WindowEvent::PointerMoved {
+        position: at(80.0, 60.0),
+    });
+    assert_eq!(pan(), (number(60.0), number(40.0)));
+}
+
+#[test]
+fn the_canvas_chrome_zooms_pans_with_keys_and_draws_rulers() {
     let (catalog, tokens) = setup();
     let login = embedded("login", &catalog, &tokens);
     let account = embedded("account", &catalog, &tokens);
@@ -537,7 +637,7 @@ fn the_canvas_chrome_pans_zooms_and_draws_rulers() {
     let source = canvas_chrome(&composed).unwrap();
     assert!(source.contains("for tick in 40:"));
     assert!(source.contains("Key.LeftArrow"));
-    assert!(source.contains("PointerEventButton.middle"));
+    assert!(source.contains("touch := TouchArea"));
     assert!(source.contains("frame-0 := LoginScreen"));
     assert!(!source.contains("MenuBar"));
     let window = generate(
@@ -595,21 +695,6 @@ fn the_canvas_chrome_pans_zooms_and_draws_rulers() {
         other => panic!("zoom is {other:?}"),
     };
     assert!((zoom - 1.1).abs() < 0.001, "zoom is {zoom}");
-
-    let window = instance.window();
-    window.dispatch_event(WindowEvent::PointerPressed {
-        position: LogicalPosition::new(400.0, 400.0),
-        button: PointerEventButton::Middle,
-    });
-    window.dispatch_event(WindowEvent::PointerMoved {
-        position: LogicalPosition::new(450.0, 430.0),
-    });
-    window.dispatch_event(WindowEvent::PointerReleased {
-        position: LogicalPosition::new(450.0, 430.0),
-        button: PointerEventButton::Middle,
-    });
-    assert_eq!(instance.get_property("pan-x").unwrap(), Value::Number(90.0));
-    assert_eq!(instance.get_property("pan-y").unwrap(), Value::Number(30.0));
 }
 
 /// A dark tick on the light top ruler, at the first mark past the corner.

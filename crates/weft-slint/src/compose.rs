@@ -27,7 +27,9 @@ pub enum ComposeError {
 
 /// A `.slint` file whose only export is `Canvas`, a `Window` holding each frame.
 /// `pan-x`, `pan-y` and `zoom` move and scale the frames without regenerating the file.
-/// A `MenuBar` is not here: a screen with a menu never becomes an [`EmbeddedComponent`].
+/// A left-pointer drag on the window background, which sits behind the frames, changes
+/// `pan-x` and `pan-y`. A `MenuBar` is not here: a screen with a menu never becomes an
+/// [`EmbeddedComponent`].
 pub fn compose(frames: &[CanvasFrame<'_>]) -> Result<String, ComposeError> {
     let mut names = BTreeSet::new();
     let mut imports = BTreeSet::new();
@@ -62,11 +64,28 @@ export component Canvas inherits Window {
     in-out property <length> pan-x: 0px;
     in-out property <length> pan-y: 0px;
     in-out property <float> zoom: 1;
+    property <length> pan-origin-x;
+    property <length> pan-origin-y;
+
+    // Behind the frames, so a control that takes the pointer keeps it.
+    touch := TouchArea {
+        width: 100%;
+        height: 100%;
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                root.pan-origin-x = root.pan-x;
+                root.pan-origin-y = root.pan-y;
+            }
+        }
+        moved => {
+            if (self.pressed) {
+                root.pan-x = root.pan-origin-x + self.mouse-x - self.pressed-x;
+                root.pan-y = root.pan-origin-y + self.mouse-y - self.pressed-y;
+            }
+        }
+    }
 ",
     );
-    if !frames.is_empty() {
-        out.push('\n');
-    }
     for (index, frame) in frames.iter().enumerate() {
         let x = js_number(frame.x);
         let y = js_number(frame.y);

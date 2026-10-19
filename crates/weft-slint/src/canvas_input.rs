@@ -1,6 +1,5 @@
-//! Rulers and pointer input for a [`compose`](crate::compose) canvas (T69 milestone 2).
-//! The frames stay where `compose` put them. This module only adds the chrome that drives
-//! `pan-x`, `pan-y` and `zoom`.
+//! Rulers, wheel zoom and arrow-key pan for a [`compose`](crate::compose) canvas (T69 milestone 2).
+//! Pointer pan stays in `compose`: a left drag on the background. This module adds the chrome.
 
 /// `source` is not the `Canvas` window [`crate::compose`] prints.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -12,11 +11,11 @@ pub enum CanvasChromeError {
 const EXPORT: &str = "export component Canvas inherits Window {\n";
 const ZOOM: &str = "    in-out property <float> zoom: 1;\n";
 
-/// Adds rulers, wheel zoom, middle-button pan and arrow-key pan to a [`crate::compose`] file.
+/// Adds rulers, wheel zoom and arrow-key pan to a [`crate::compose`] file.
 ///
 /// Zoom stays between 0.25 and 4. Each ruler draws 40 ticks of 40px, following pan and zoom.
-/// A left click still reaches the screen: only the middle button pans. A screen with a menu never
-/// reaches here, because `compose` only accepts embedded components.
+/// The arrow keys pan by 40px while the canvas has focus. A screen with a menu never reaches
+/// here, because `compose` only accepts embedded components.
 pub fn canvas_chrome(source: &str) -> Result<String, CanvasChromeError> {
     if source.matches(EXPORT).count() != 1 {
         return Err(CanvasChromeError::NotCanvas);
@@ -33,12 +32,36 @@ pub fn canvas_chrome(source: &str) -> Result<String, CanvasChromeError> {
     if !tail[close + 2..].trim().is_empty() {
         return Err(CanvasChromeError::NotCanvas);
     }
+    let (properties, elements) = split_properties(&tail[..close]);
     let mut out = String::with_capacity(source.len() + 2048);
     out.push_str(head);
     out.push_str(ZOOM);
-    out.push_str(&chrome(&tail[..close]));
+    out.push_str(properties);
+    out.push_str(&chrome(elements));
     out.push_str("}\n");
     Ok(out)
+}
+
+/// Property and comment lines stay on `Canvas`. The elements, including `compose`'s background
+/// `TouchArea`, are what the wheel area wraps.
+fn split_properties(tail: &str) -> (&str, &str) {
+    let mut start = 0;
+    for line in tail.split_inclusive('\n') {
+        let trimmed = line.trim();
+        let header = trimmed.is_empty()
+            || trimmed.starts_with("//")
+            || trimmed.starts_with("in-out property ")
+            || trimmed.starts_with("in property ")
+            || trimmed.starts_with("out property ")
+            || trimmed.starts_with("private property ")
+            || trimmed.starts_with("property ")
+            || trimmed.starts_with("forward-focus:");
+        if !header {
+            break;
+        }
+        start += line.len();
+    }
+    (&tail[..start], &tail[start..])
 }
 
 fn chrome(frames: &str) -> String {
@@ -46,11 +69,6 @@ fn chrome(frames: &str) -> String {
     format!(
         "\
     forward-focus: canvas-keys;
-    private property <bool> panning: false;
-    private property <length> grab-x: 0px;
-    private property <length> grab-y: 0px;
-    private property <length> origin-x: 0px;
-    private property <length> origin-y: 0px;
 
     canvas-keys := FocusScope {{
         key-pressed(event) => {{
@@ -74,7 +92,7 @@ fn chrome(frames: &str) -> String {
         }}
     }}
 
-    canvas-input := TouchArea {{
+    canvas-wheel := TouchArea {{
         width: 100%;
         height: 100%;
         scroll-event(event) => {{
@@ -84,24 +102,6 @@ fn chrome(frames: &str) -> String {
                 root.zoom = max(root.zoom / 1.1, 0.25);
             }}
             return accept;
-        }}
-        pointer-event(event) => {{
-            if (event.button == PointerEventButton.middle && event.kind == PointerEventKind.down) {{
-                root.panning = true;
-                root.grab-x = self.mouse-x;
-                root.grab-y = self.mouse-y;
-                root.origin-x = root.pan-x;
-                root.origin-y = root.pan-y;
-            }}
-            if (event.button == PointerEventButton.middle && (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel)) {{
-                root.panning = false;
-            }}
-        }}
-        moved => {{
-            if (root.panning) {{
-                root.pan-x = root.origin-x + self.mouse-x - root.grab-x;
-                root.pan-y = root.origin-y + self.mouse-y - root.grab-y;
-            }}
         }}
 {body}    }}
 

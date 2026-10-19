@@ -2083,14 +2083,22 @@ Next slice of T69 milestone 2. `compose` assembles `generate_embedded` component
 
 Result: `compose` writes the import line, each component once, and `Canvas` with `pan-x`, `pan-y` and `zoom`. Rulers, selection, keyboard navigation and pointer pan stay open.
 
-### T69.2c. Canvas rulers and pan
+### T69.2c. Pan the canvas by dragging its background
 
-Next slice of T69 milestone 2. `canvas_chrome` takes the file `compose` prints and adds the chrome that drives its `pan-x`, `pan-y` and `zoom`. The wheel sets zoom between 0.25 and 4. The middle button pans, so a left click still reaches the screen. The arrow keys pan by 40px while the canvas has focus. Each ruler draws 40 ticks of 40px that follow the pan and the zoom. Zoom still changes a frame's width only, which is what `compose` already does: the software renderer has no transforms (Slint 1.18). A source that is not that `Canvas` window is refused. Done when `login` and `account` compile with the chrome, a ruler tick is visible, the wheel, the middle button and the left arrow change the properties, and a plain generated `Window` is refused.
+Next slice of T69 milestone 2. `compose` already exposes `pan-x` and `pan-y`. A left-pointer drag on the window background sets them from the movement since the press, so a host does not have to write that gesture. The background is a `TouchArea` declared before the frames, so a control that takes the pointer keeps it. Done when a drag on empty background changes `pan-x` and `pan-y` by the pointer's movement, a second drag continues from the new origin, a drag that starts on a control does not, and the two-frame paint and the `Window` goldens stay unchanged.
 
-**Execution plan.** (1) SPEC §9, AGENT-SPEC §5 and the crate README, with the code. (2) `canvas_chrome` in `crates/weft-slint`, leaving `compose` unchanged. (3) One test: the chrome compiles, paints a tick, pans and zooms through the interpreter, and refuses `generate`'s `Window`. (4) `cargo fmt`, `cargo test -p weft-slint --test slint`, clippy.
+**Execution plan.** (1) SPEC §9, AGENT-SPEC §5 and the crate README, with the code. (2) The background `TouchArea` in `compose`. (3) A test that dispatches the pointer on an empty background and on a control. (4) `cargo fmt`, `cargo test -p weft-slint --test slint`, clippy.
 
-Result: `canvas_chrome` wraps the frames in one `TouchArea`, focuses a `FocusScope` for the arrow keys, and draws the two rulers plus their corner. Selection, hover and keyboard navigation of the element tree stay open.
+Result: dragging the background pans the canvas. Rulers, selection and keyboard navigation stay open.
+
+### T69.2d. Canvas rulers, wheel zoom and arrow keys
+
+Next slice of T69 milestone 2. `canvas_chrome` takes the file `compose` prints and adds rulers, wheel zoom and arrow-key pan. The wheel sets zoom between 0.25 and 4. The arrow keys pan by 40px while the canvas has focus. Each ruler draws 40 ticks of 40px that follow the pan and the zoom. Pointer pan stays the left-button drag `compose` already has, so this does not add a second gesture. Zoom still changes a frame's width only, which is what `compose` already does: the software renderer has no transforms (Slint 1.18). A source that is not that `Canvas` window is refused. Done when `login` and `account` compile with the chrome, a ruler tick is visible, the wheel and the left arrow change the properties, the background-drag test still passes, and a plain generated `Window` is refused.
+
+**Execution plan.** (1) SPEC §9, AGENT-SPEC §5 and the crate README, with the code. (2) `canvas_chrome` in `crates/weft-slint`, leaving the background drag in `compose`. (3) One test: the chrome compiles, paints a tick, zooms and pans through the interpreter, and refuses `generate`'s `Window`. (4) `cargo fmt`, `cargo test -p weft-slint --test slint`, clippy.
+
+Result: `canvas_chrome` wraps the frames in a wheel `TouchArea`, focuses a `FocusScope` for the arrow keys, and draws the two rulers plus their corner. Selection, hover and keyboard navigation of the element tree stay open.
 
 Model: Cursor / Grok 4.7 · Status: done · Priority: P2 · Complexity: 3
-Check: `cargo test -p weft-slint --features import,runtime --test slint the_canvas_chrome_pans_zooms_and_draws_rulers`.
+Check: `cargo test -p weft-slint --features import,runtime --test slint the_canvas_chrome_zooms_pans_with_keys_and_draws_rulers`.
 
