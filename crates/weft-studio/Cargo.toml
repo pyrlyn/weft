@@ -17,5 +17,9 @@ weft-core = { workspace = true }
 # Default features only: the generator, no Slint crate. The shells' FFI crate adds the runtime.
 weft-slint = { workspace = true }
 
+[dev-dependencies]
+# The canvas test compiles the generated window. The library itself stays free of the Slint crate.
+weft-slint = { workspace = true, features = ["runtime"] }
+
 [lints]
 workspace = true

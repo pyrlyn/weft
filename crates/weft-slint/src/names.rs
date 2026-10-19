@@ -39,7 +39,8 @@ pub fn identifier(name: &str) -> Option<&str> {
 }
 
 /// `login-form` → `LoginForm`: the component name a screen id gives, with `Screen` appended by
-/// the caller. A name that would start with a digit gets a `Weft` prefix.
+/// the caller. A name that would start with a digit gets a `Weft` prefix. `-` and `_` are both
+/// dropped, so `foo-bar` and `foo_bar` name one component.
 pub fn type_name(id: &str) -> String {
     let mut out = String::new();
     for part in id.split(|c: char| !c.is_ascii_alphanumeric()) {
