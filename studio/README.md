@@ -7,6 +7,11 @@ native file dialogs. The document, the generation and the surface live in one Ru
 `crates/weft-studio-ffi` (the `ws_*` editor calls and slint-bindings' `sb_*` surface); the shells
 add only chrome and dialogs.
 
+The document core can also open several `.weft` files as frames on one canvas (`weft_studio::Canvas`,
+T69.2): pan, zoom, rulers and a grid in the generated Slint, and selection along the element tree.
+The C ABI exposes that canvas as `ws_canvas_*` (T69.3). The shells do not show that canvas yet;
+they still open one screen.
+
 | Folder | What it is |
 | --- | --- |
 | `macos` | WeftStudio for macOS (SwiftUI and AppKit, macOS 14, arm64): the app, its Swift Testing unit tests and an XCUITest, generated into an Xcode project by XcodeGen |

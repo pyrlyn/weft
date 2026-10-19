@@ -80,8 +80,13 @@ fn slint_bindings_header() -> PathBuf {
         .as_str()
         .unwrap()
         .to_owned();
+    // `manifest_path` names Cargo.toml. Joining `..` onto that file fails in canonicalize,
+    // because the file is not a directory, so the walk starts at the crate directory.
+    // `crates/slint-bindings-ffi` sits two levels under the repo, beside `swift/`.
     Path::new(&manifest)
-        .join("../../../swift/Sources/CSlintBindings/slint_bindings.h")
+        .parent()
+        .unwrap()
+        .join("../../swift/Sources/CSlintBindings/slint_bindings.h")
         .canonicalize()
         .unwrap()
 }

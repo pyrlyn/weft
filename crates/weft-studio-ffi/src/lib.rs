@@ -1,8 +1,8 @@
-//! The C ABI of WeftStudio (T69.1): the `ws_*` editor calls over `weft-studio`, linked together
-//! with slint-bindings' `sb_*` surface calls, so a shell loads one Rust library and holds two
-//! opaque handles, `WsEditor*` for the document and `SbHost*` for the surface. Two Rust libraries
-//! in one app would each carry a copy of Slint, and the screen would not find the platform the
-//! host installed.
+//! The C ABI of WeftStudio (T69): the `ws_*` editor and canvas calls over `weft-studio`, linked
+//! together with slint-bindings' `sb_*` surface calls, so a shell loads one Rust library and holds
+//! opaque handles, `WsEditor*` or `WsCanvas*` for the document and `SbHost*` for the surface. Two
+//! Rust libraries in one app would each carry a copy of Slint, and the screen would not find the
+//! platform the host installed.
 //!
 //! Everything a shell passes in is untrusted: a null pointer, a path that is not UTF-8 or a call
 //! from another thread is a failed call with a message for `ws_last_error`, and no panic unwinds
@@ -19,13 +19,24 @@ use serde_json::{Value as Json, json};
 use slint_bindings_ffi::SbHost;
 use slint_interpreter::Value;
 use weft_slint::GenerateError;
-use weft_studio::{Editor, EditorError};
+use weft_studio::{Canvas, CanvasError, Direction, Editor, EditorError};
 
 #[allow(unsafe_code)]
 pub mod abi;
 
 /// The version of the `ws_*` API and of the JSON it sends; a shell refuses any other.
 pub const WS_API_VERSION: u32 = 0;
+
+/// Keyboard movement of the canvas selection, the `direction` argument of `ws_canvas_move`.
+pub const WS_CANVAS_NEXT: u32 = 0;
+/// The previous element. With nothing selected, the selection stays put.
+pub const WS_CANVAS_PREVIOUS: u32 = 1;
+/// The parent element. The screen stays selected.
+pub const WS_CANVAS_PARENT: u32 = 2;
+/// The root of the next frame. With nothing selected, the first frame.
+pub const WS_CANVAS_NEXT_FRAME: u32 = 3;
+/// The root of the previous frame. With nothing selected, the selection stays put.
+pub const WS_CANVAS_PREVIOUS_FRAME: u32 = 4;
 
 /// Decision 8 of T69.1: one style on both platforms, the one the screenshot baselines use.
 const STYLE: &str = "fluent";
@@ -188,6 +199,92 @@ impl WsEditor {
     }
 }
 
+/// Several screens as frames on one canvas (T69.3). Every call must come from the thread that
+/// created it, the UI thread, as slint-bindings requires of its hosts.
+pub struct WsCanvas {
+    canvas: Canvas,
+    sink: Sink,
+    thread: ThreadId,
+}
+
+impl WsCanvas {
+    fn open_dir(
+        path: &Path,
+        on_event: WsEventFn,
+        user_data: *mut c_void,
+    ) -> Result<WsCanvas, String> {
+        Ok(WsCanvas {
+            canvas: Canvas::open_dir(path).map_err(describe_canvas)?,
+            sink: Sink {
+                on_event,
+                user_data,
+            },
+            thread: std::thread::current().id(),
+        })
+    }
+
+    fn check_thread(&self) -> Result<(), String> {
+        if std::thread::current().id() == self.thread {
+            Ok(())
+        } else {
+            Err("the canvas was called from a thread other than the one that created it".into())
+        }
+    }
+
+    fn state_json(&self) -> Result<String, String> {
+        serde_json::to_string(&Versioned {
+            v: WS_API_VERSION,
+            inner: self.canvas.state(),
+        })
+        .map_err(|e| e.to_string())
+    }
+
+    fn set_view(&mut self, pan_x: f64, pan_y: f64, zoom: f64) {
+        self.canvas.set_pan(pan_x, pan_y);
+        self.canvas.set_zoom(zoom);
+    }
+
+    fn move_selection(&mut self, direction: Direction) {
+        self.canvas.move_selection(direction);
+    }
+
+    fn save(&mut self, frame: u32, path: Option<&Path>) -> Result<(), String> {
+        self.canvas
+            .save(frame as usize, path)
+            .map_err(describe_canvas)
+    }
+
+    /// The canvas compiled and hosted at `width`×`height` physical pixels. `perform(screen,
+    /// action, id)` is raised as an `action` event. Sample data stays on the single-screen editor.
+    fn surface(&self, width: u32, height: u32, scale: f32) -> Result<SbHost, String> {
+        let input = self.canvas.render_input().map_err(describe_canvas)?;
+        let definition = weft_slint::runtime::compile(&input.source, STYLE)
+            .map_err(|errors| errors.join("\n"))?;
+        let host = SbHost::new(&definition, width, height, scale).map_err(|e| e.to_string())?;
+        let sink = self.sink;
+        host.component()
+            .set_callback("perform", move |args| {
+                if let [
+                    Value::String(screen),
+                    Value::String(action),
+                    Value::String(id),
+                ] = args
+                {
+                    sink.emit(&json!({
+                        "v": WS_API_VERSION,
+                        "type": "action",
+                        "screen": screen.as_str(),
+                        "action": action.as_str(),
+                        "id": id.as_str(),
+                    }));
+                }
+                Value::Void
+            })
+            .map_err(|e| format!("the generated canvas has no perform callback: {e}"))?;
+        Ok(host)
+    }
+}
+
 /// The error and its causes on one line, then the diagnostics behind a syntax error or a refused
 /// screen one per line, so the shell's alert says what to fix.
 fn describe(error: EditorError) -> String {
@@ -211,4 +308,11 @@ fn describe(error: EditorError) -> String {
         }
     }
     text
+}
+
+fn describe_canvas(error: CanvasError) -> String {
+    match error {
+        CanvasError::Editor(error) => describe(error),
+        other => other.to_string(),
+    }
 }
