@@ -111,7 +111,7 @@ The native shell and the shared surface talk only through the slint-bindings C A
 
 T69.3a, the first slice of milestone 3, is done (`done.md`): `Editor::edit` applies a patch list (SPEC §7) with the project's catalog, tokens and actions, records that list, and `undo` / `redo` restore the document on either side. `dirty` is true when the open document differs from the last open or successful save. The shells still do not edit. The canvas, the layers tree and the inspector stay open.
 
-T69.3b is done (`done.md`): `ws_apply_patches`, `ws_undo` and `ws_redo` expose that core on the C ABI (API version stays 0). The macOS and Windows shells still do not call them.
+T69.3c is done (`done.md`): `ws_apply_patches`, `ws_undo` and `ws_redo` expose that core on the C ABI (API version stays 0). The macOS and Windows shells still do not call them.
 
 **Acceptance criteria.**
 
