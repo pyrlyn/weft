@@ -48,6 +48,26 @@ pub fn generate(
     document: &Document,
     options: &GenerateOptions<'_>,
 ) -> Result<String, GenerateError> {
+    generate_with(document, options, true)
+}
+
+/// The same screen as [`generate`], for a host that shows several screens in one window
+/// (SPEC §9, To Slint). The component is not exported and it inherits `Rectangle` instead of
+/// `Window`, so the host places it; it has no `title`. A screen with a `menu` is refused:
+/// Slint 1.18 allows a `MenuBar` only as a direct child of a `Window`. `import_slint` reads
+/// only the `Window` form [`generate`] prints.
+pub fn generate_component(
+    document: &Document,
+    options: &GenerateOptions<'_>,
+) -> Result<String, GenerateError> {
+    generate_with(document, options, false)
+}
+
+fn generate_with(
+    document: &Document,
+    options: &GenerateOptions<'_>,
+    window: bool,
+) -> Result<String, GenerateError> {
     let types = token_types(options.tokens);
     let diagnostics = validate_document(
         document,
@@ -87,7 +107,11 @@ pub fn generate(
         .name
         .or(document.root.id.as_deref())
         .unwrap_or("screen");
-    g.screen(&document.root, &format!("{}Screen", type_name(name)));
+    g.screen(
+        &document.root,
+        &format!("{}Screen", type_name(name)),
+        window,
+    );
     if !g.problems.is_empty() {
         return Err(GenerateError::Unsupported(g.problems));
     }
@@ -278,9 +302,15 @@ impl Gen<'_> {
         }
     }
 
-    fn screen(&mut self, root: &Node, name: &str) {
-        self.line(0, &format!("export component {name} inherits Window {{"));
-        self.bind_line(1, root, "label", "title", Ty::Str);
+    fn screen(&mut self, root: &Node, name: &str, window: bool) {
+        if window {
+            self.line(0, &format!("export component {name} inherits Window {{"));
+            self.bind_line(1, root, "label", "title", Ty::Str);
+        } else {
+            // A host window places this. `Rectangle` carries geometry; `Window` would be a
+            // second top-level window, which a canvas of several screens cannot be.
+            self.line(0, &format!("component {name} inherits Rectangle {{"));
+        }
         let props: Vec<String> = self
             .data
             .props
@@ -302,7 +332,12 @@ impl Gen<'_> {
         self.line(1, "callback perform(string, string);");
         self.out.push('\n');
         // A MenuBar is legal only as a direct child of Window, so every menu is emitted here.
-        self.hoist_menus(root);
+        // The embedded form has no Window of its own, so a menu is refused instead.
+        if window {
+            self.hoist_menus(root);
+        } else {
+            self.refuse_menus(root);
+        }
         self.imports.insert("VerticalBox");
         self.open(1, root, "VerticalBox", &[]);
         self.line(2, "alignment: LayoutAlignment.start;");
@@ -1111,6 +1146,27 @@ impl Gen<'_> {
                 "changed {shown} => {{ if !{shown} && {show} {{ {} }} }}",
                 stmts.join(" ")
             ));
+        }
+    }
+
+    fn refuse_menus(&mut self, node: &Node) {
+        if node.kind == "menu" {
+            self.unsupported(
+                node,
+                "a menu is a MenuBar, which Slint allows only as a child of a Window",
+            );
+        }
+        for child in &node.children {
+            if let Child::Node(inner) = child {
+                self.refuse_menus(inner);
+            }
+        }
+        for slot in node.slots.values() {
+            for child in slot {
+                if let Child::Node(inner) = child {
+                    self.refuse_menus(inner);
+                }
+            }
         }
     }
 

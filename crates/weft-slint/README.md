@@ -3,6 +3,7 @@
 Weft to Slint and back (SPEC §9, "To Slint" and "From Slint").
 
 - `generate` turns a strictly valid screen into one `.slint` file for Slint 1.x and its `std-widgets.slint`.
+- `generate_component` prints the same screen as an unexported `Rectangle` a host window can place among other screens. A screen with a `menu` is refused, because a `MenuBar` is legal only as a child of a `Window`. `import_slint` does not read this form.
 - `import_slint` reads a file that `generate` printed back into the same Weft document.
 - `read_slint` (crate feature `import`) reads a file `import_slint` rejects, from the Slint syntax tree, and lists what it could not keep.
 
@@ -23,7 +24,7 @@ The crate is pure Rust over `weft-core` and `weft-catalog`. The Slint compiler (
 | --- | --- |
 | Source comment | `// weft:source slint` and the canonical markup, one line per comment line |
 | Imports | Only the std widgets the screen uses |
-| Component | `export component <Name>Screen inherits Window`, `title` from the screen's `label` |
+| Component | `export component <Name>Screen inherits Window`, `title` from the screen's `label`. `generate_component` drops `export` and the `title`, and inherits `Rectangle` |
 | Data | One `in-out property` per root data path a binding reads: `$.email` → `email`, `$.user.email` → `user-email` |
 | Actions | `callback perform(string, string)`: the action name and the id of the element |
 | Body | A `VerticalBox` named after the screen id, holding the elements |

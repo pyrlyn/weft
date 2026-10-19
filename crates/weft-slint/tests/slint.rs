@@ -12,7 +12,7 @@ use weft_catalog::token_types;
 use weft_core::{Mode, ValidateOptions, serialize, validate_document};
 use weft_slint::{
     GenerateError, GenerateOptions, ImportError, ImportOptions, MAX_SOURCE_LENGTH, generate,
-    import_slint, read_slint, runtime,
+    generate_component, import_slint, read_slint, runtime,
 };
 
 use common::{document, exported_component, here, screens, setup};
@@ -298,4 +298,76 @@ fn layout_props_read_back_without_the_source_comment() {
         button.props.get("grow"),
         Some(&weft_core::Value::Bool(true))
     );
+}
+
+/// The name of the unexported component `generate_component` prints.
+fn component_name(source: &str) -> &str {
+    source
+        .lines()
+        .find_map(|line| {
+            let rest = line.strip_prefix("component ")?;
+            rest.split_whitespace().next()
+        })
+        .unwrap()
+}
+
+/// One exported window that contains the embedded screen, which is what a canvas compiles.
+fn in_host(source: &str) -> String {
+    let name = component_name(source);
+    format!(
+        "{source}\nexport component Host inherits Window {{\n    width: 480px;\n    height: 800px;\n    {name} {{ width: 100%; height: 100%; }}\n}}\n"
+    )
+}
+
+#[test]
+fn an_embedded_screen_is_a_rectangle_inside_a_host_window() {
+    let (catalog, tokens) = setup();
+    for (name, path) in screens() {
+        let markup = std::fs::read_to_string(&path).unwrap();
+        let doc = document(&markup, &catalog, &tokens);
+        let options = GenerateOptions {
+            catalog: &catalog,
+            tokens: &tokens,
+            name: None,
+        };
+        let embedded = generate_component(&doc, &options);
+        if markup.contains("<menu") {
+            let Err(GenerateError::Unsupported(problems)) = embedded else {
+                panic!("{name} has a menu and should be refused");
+            };
+            assert!(
+                problems.iter().all(|p| p.message.contains("MenuBar")),
+                "{name}: {problems:?}"
+            );
+            continue;
+        }
+        let slint = embedded.unwrap();
+        assert!(
+            !slint.contains("inherits Window"),
+            "{name} must not be its own window"
+        );
+        assert!(slint.contains("inherits Rectangle"), "{name}");
+        assert!(!slint.contains("export component"), "{name}");
+        // The window `title` is a depth-1 property. A section's GroupBox title sits deeper.
+        assert!(
+            !slint
+                .lines()
+                .any(|line| line.starts_with("    title:") && !line.starts_with("        ")),
+            "{name} must not take the screen label as a window title"
+        );
+        let (errors, built) = compile(&in_host(&slint), "Host");
+        assert!(errors.is_empty() && built, "{name}: {errors:#?}");
+        // The Window form is unchanged, and it is the only form import accepts.
+        let window = generate(&doc, &options).unwrap();
+        assert!(window.contains("export component"));
+        assert!(window.contains("inherits Window"));
+        let import = ImportOptions {
+            catalog: &catalog,
+            tokens: &tokens,
+        };
+        assert!(matches!(
+            import_slint(&slint, &import),
+            Err(ImportError::Edited)
+        ));
+    }
 }
