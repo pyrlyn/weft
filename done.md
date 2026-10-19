@@ -1,5 +1,15 @@
 # Done
 
+### T69.2b. Canvas model
+
+Part of T69 milestone 2, beside T69.2a (the embedded Slint component). The document core holds one screen. The canvas holds several, with a view and a selection, and still saves each screen as canonical markup. Done when frames, pan, zoom, frame hit-testing, element selection and keyboard movement are covered without a Slint crate.
+
+`Canvas` in `crates/weft-studio` opens a `.weft` file as a frame of 390 by 800 to the right of the frames already open (80 px between them). A refused open adds nothing. Frame positions are session state: `move_frame` changes the origin, and a save still writes only the screen. Screen space is `canvas * zoom + pan`. `zoom_at` keeps the canvas point under the cursor and clamps the zoom to 0.1 and 8. `frame_at` hits the frontmost frame and misses the gap. `select` and `hover_at` name an element by its diagnostic path. `focus` walks that tree in document order, across frames, and steps over a `slot` because a slot is not an element. A point does not pick an element: that needs the Slint layout, which this crate does not link.
+
+Result: `crates/weft-studio/tests/canvas.rs`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 3
+Check: `cargo test -p weft-studio`.
+
 ### T16.3. Layout vocabulary: web generators and the reference renderer
 
 T16 scope items 3 and 5 for the web, as the design's generate table says. Depends on T16.2.
