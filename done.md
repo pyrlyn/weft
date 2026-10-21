@@ -2086,6 +2086,16 @@ Execution plan:
 
 Done: reused the existing shared host at merged commit `7fc02456ec732e6b742ffb8245ad78d5318e7b9d`; the nested lockfile now contains Wasmtime/WASI 49.0.3 and no Wasmtime 43. The nested RustSec audit changed from vulnerable to clean. Plugin build, strict host/guest clippy, all 21 plugin tests (including four end-to-end cases), and the full 38-task repository gate passed. No guest ABI, generated output, new dependency, or custom implementation was needed.
 
+### T69.3b. Layers list and inspector read
+
+First read-only slice of T69 milestone 3. The layers panel and the property inspector need the open screen's elements by the same paths diagnostics use (SPEC §6.1), before either one writes a patch. `Editor::layers` lists every element in document order: the element, then its children, then each slot. `Editor::inspect` returns that element's kind, id, props, events and direct children. A path that is not in the document reads as nothing. Saving is unchanged, and there is no new `weft.json` key. Done when login's rows and the submit button's binding match the markup, a missing path reads as nothing, and every corpus screen lists the same elements as `element_paths`.
+
+**Execution plan.** (1) `layers` in `crates/weft-studio`, using `path_segment` so the names match diagnostics. (2) Tests over login and the corpus. (3) `cargo fmt`, `cargo test -p weft-studio --test layers`, clippy. No SPEC change: the paths already exist.
+
+Result: the list and the read. The canvas, selection from a point, and writing a patch stay open.
+
+Model: Cursor / Grok 4.7 · Status: done · Priority: P2 · Complexity: 2
+Check: `cargo test -p weft-studio --test layers`.
 ### T69.2a. Embedded Slint components
 
 First slice of T69 milestone 2 (the canvas). T69.1 renders one screen as an exported `Window`. Several screens on one surface need each screen as a component inside the host's own window: Slint 1.18 has no `ComponentContainer` unless experimental features are on. `generate_embedded` prints `component <Name>Screen inherits Rectangle` (not exported), with the screen's `label` as `accessible-label`, the screen box filling that rectangle, and the component's preferred size taken from the box. A `menu` is refused, because a `MenuBar` is legal only in a `Window` (Slint 1.18). `generate`, `weft slint` and `import_slint` stay on the `Window` form, so there is no new `weft.json` key. Done when every corpus screen without a menu compiles inside a host `Window`, two of them compile in one file, the menu screen is refused and still generates as a `Window`, and the existing goldens are unchanged.
