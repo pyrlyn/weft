@@ -5,8 +5,10 @@
 //! `compose` places those components in one `Canvas` window; dragging its background pans it.
 //! `read_slint` (feature `import`) reads a file `import_slint` rejects, from the Slint syntax tree.
 //! `runtime` (feature `runtime`) compiles the generated source with the Slint interpreter and fills
-//! it with sample data. The mapping is documented in this crate's README.
+//! it with sample data. `canvas_chrome` adds rulers, wheel zoom and arrow-key pan to that window.
+//! The mapping is documented in this crate's README.
 
+mod canvas_input;
 mod compose;
 mod data;
 mod generate;
@@ -19,6 +21,7 @@ mod read_expr;
 #[cfg(feature = "runtime")]
 pub mod runtime;
 
+pub use canvas_input::{CanvasChromeError, canvas_chrome};
 pub use compose::{CanvasFrame, ComposeError, compose};
 pub use generate::{
     EmbeddedComponent, GenerateError, GenerateOptions, generate, generate_embedded,

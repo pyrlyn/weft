@@ -8,13 +8,15 @@
 
 mod common;
 
-use slint_interpreter::ComponentHandle;
+use i_slint_core::input::key_codes::LeftArrow;
+use i_slint_core::platform::WindowEvent;
+use slint_interpreter::{ComponentHandle, LogicalPosition, PhysicalSize, SharedString, Value};
 use weft_catalog::token_types;
 use weft_core::{Mode, ValidateOptions, serialize, validate_document};
 use weft_slint::{
-    CanvasFrame, ComposeError, EmbeddedComponent, GenerateError, GenerateOptions, ImportError,
-    ImportOptions, MAX_SOURCE_LENGTH, compose, generate, generate_embedded, import_slint,
-    read_slint, runtime,
+    CanvasChromeError, CanvasFrame, ComposeError, EmbeddedComponent, GenerateError,
+    GenerateOptions, ImportError, ImportOptions, MAX_SOURCE_LENGTH, canvas_chrome, compose,
+    generate, generate_embedded, import_slint, read_slint, runtime,
 };
 
 use common::{document, ensure_backend, exported_component, here, screens, setup};
@@ -610,6 +612,98 @@ component BlockScreen inherits Rectangle {
         position: at(80.0, 60.0),
     });
     assert_eq!(pan(), (number(60.0), number(40.0)));
+}
+
+#[test]
+fn the_canvas_chrome_zooms_pans_with_keys_and_draws_rulers() {
+    let (catalog, tokens) = setup();
+    let login = embedded("login", &catalog, &tokens);
+    let account = embedded("account", &catalog, &tokens);
+    let composed = compose(&[
+        CanvasFrame {
+            component: &login,
+            x: 32.0,
+            y: 24.0,
+            width: 360.0,
+        },
+        CanvasFrame {
+            component: &account,
+            x: 440.0,
+            y: 24.0,
+            width: 360.0,
+        },
+    ])
+    .unwrap();
+    let source = canvas_chrome(&composed).unwrap();
+    assert!(source.contains("for tick in 40:"));
+    assert!(source.contains("Key.LeftArrow"));
+    assert!(source.contains("touch := TouchArea"));
+    assert!(source.contains("frame-0 := LoginScreen"));
+    assert!(!source.contains("MenuBar"));
+    let window = generate(
+        &document(
+            &std::fs::read_to_string(
+                screens()
+                    .into_iter()
+                    .find(|(name, _)| name == "login")
+                    .unwrap()
+                    .1,
+            )
+            .unwrap(),
+            &catalog,
+            &tokens,
+        ),
+        &GenerateOptions {
+            catalog: &catalog,
+            tokens: &tokens,
+            name: None,
+        },
+    )
+    .unwrap();
+    assert_eq!(canvas_chrome(&window), Err(CanvasChromeError::NotCanvas));
+
+    let (errors, built) = compile(&source, "Canvas");
+    assert!(errors.is_empty() && built, "{errors:#?}\n{source}");
+
+    ensure_backend();
+    let instance = runtime::compile(&source, "fluent")
+        .unwrap()
+        .create()
+        .unwrap();
+    instance.show().unwrap();
+    instance.window().set_size(PhysicalSize::new(1600, 900));
+    let buffer = instance.window().take_snapshot().unwrap();
+    assert!(
+        ruler_tick(buffer.as_bytes(), buffer.width(), buffer.height()),
+        "ruler tick is missing"
+    );
+
+    instance.window().dispatch_event(WindowEvent::KeyPressed {
+        text: SharedString::from(LeftArrow),
+    });
+    assert_eq!(instance.get_property("pan-x").unwrap(), Value::Number(40.0));
+
+    instance
+        .window()
+        .dispatch_event(WindowEvent::PointerScrolled {
+            position: LogicalPosition::new(400.0, 400.0),
+            delta_x: 0.0,
+            delta_y: 20.0,
+        });
+    let zoom = match instance.get_property("zoom").unwrap() {
+        Value::Number(zoom) => zoom,
+        other => panic!("zoom is {other:?}"),
+    };
+    assert!((zoom - 1.1).abs() < 0.001, "zoom is {zoom}");
+}
+
+/// A dark tick on the light top ruler, at the first mark past the corner.
+fn ruler_tick(bytes: &[u8], width: u32, height: u32) -> bool {
+    if height < 24 || width < 48 {
+        return false;
+    }
+    let i = ((20 * width + 40) * 4) as usize;
+    bytes.get(i).is_some_and(|red| *red < 200)
 }
 
 fn paints(bytes: &[u8], width: u32, height: u32, x0: u32, x1: u32, y0: u32, y1: u32) -> bool {
