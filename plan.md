@@ -8,9 +8,9 @@ An open, agent-friendly UI description format — strict markup for models, cano
 | T14 | in progress | P2 | 5 | 75% | Claude Code / claude-opus-5-5 |
 | T69 | in progress | P2 | 5 | 15% | Cursor / grok-4.7 |
 | T69.1 | in progress | P2 | 4 | 95% | Claude Code / claude-opus-5-5 |
+| T69 | todo | P2 | 5 | 0% | |
 | T106 | in progress | P2 | 5 | 95% | Claude Code / claude-opus-5-5 |
 | T106.7 | in progress | P2 | 4 | 95% | Claude Code / claude-opus-5-5 |
-| T105 | in progress | P2 | 5 | 30% | Claude Code / claude-opus-5-5 |
 | T903 | todo | P2 | 2 | 0% | |
 
 ### T8. Evaluation
@@ -104,10 +104,14 @@ The native shell and the shared surface talk only through the slint-bindings C A
 
 1. Skeleton: a native window on each platform hosting one Slint surface through slint-bindings, showing one corpus screen rendered by `weft-slint`; open and save through the native file dialogs.
 2. Canvas: several screens as frames, pan and zoom, rulers, selection and hover from the Weft element tree, keyboard navigation. T69.2b, the canvas model in `weft-studio` (frames, pan, zoom, frame hit-testing, selection and keyboard navigation over the element tree), is done (`done.md`). Rulers and the Slint surface that draws the frames are still open.
+1. Skeleton: done (T69.1, `done.md`). A native window on each platform hosts one Slint surface through slint-bindings, shows one corpus screen rendered by `weft-slint`, and opens and saves through the native file dialogs.
+2. Canvas: several screens as frames, pan and zoom, rulers, selection and hover from the Weft element tree, keyboard navigation.
 3. Editing: move, reorder, insert and delete elements, resize within the layout rules, the layers tree and the property inspector writing Weft patches; undo and redo; validation diagnostics shown on the canvas and in the inspector.
 4. Components and tokens: the catalog panel, catalog-extension kinds as components, design tokens from the project (spacing, colours, typography) in the inspector, the light and dark appearances.
 5. Round trip with the outside: the saved files stay canonical (`weft fmt` leaves them unchanged), the existing exporters (SwiftUI, web, Slint, A2UI) run from the native menus, and files edited by agents or by hand reload without losing the selection where ids still exist.
 6. Packaging: signed builds for macOS (arm64 only) and Windows x86_64, with the toolchain rows in `toolchain.md`.
+
+T69.2a, the first slice of milestone 2, is done (`done.md`): `generate_embedded` prints a screen as a Slint component that does not inherit `Window`, so a later slice can place several screens on one surface. Pan, zoom, rulers, selection and keyboard navigation are still open.
 
 **Acceptance criteria.**
 
@@ -119,144 +123,7 @@ The native shell and the shared surface talk only through the slint-bindings C A
 
 **Out of scope.** Multiplayer and real-time collaboration, cloud storage, accounts and sharing, comments and review threads, prototyping and interaction flows, vector drawing tools and boolean shape operations, image editing, plugins for the editor, Figma file import (T14 covers the Figma round trip), a web version (later, through Slint's WebAssembly build), iOS and Android, Intel Macs, and Linux.
 
-The creator approved T69.1, the plan of the first milestone; its sub-tasks T69.1a and T69.1b are done.
-
-### T69.1. Editor skeleton
-
-Milestone 1 of T69: a native window on macOS and on Windows hosts one Slint surface through slint-bindings, shows one corpus screen rendered by `weft-slint`, and opens and saves `.weft` files through the native file dialogs. The creator approved this plan and every decision below with its recommendation. It splits into five sub-tasks, T69.1a–T69.1e, each within the 500-line limit and each claimed as its own row with the plan below. Facts were checked on 2026-10-08; sources are at the end of the card.
-
-**What exists today.**
-
-- Weft: `weft-slint` generates every corpus screen, and the generated files compile with `slint-interpreter` 1.18.1 (T67–T67.5). The interpreter is a dev-dependency only. Two private copies of a compile helper live in `crates/weft-slint/tests/slint.rs` and `tests/screenshots.rs`, and the second also feeds `data.json` into a component's properties (about 150 lines). Project discovery (`find_project`) and the file-reading project loader are private to `crates/weft-cli/src/main.rs`. The workspace forbids `unsafe_code`; `weft-node` overrides it with its own `[lints]`.
-- The name WeftEditor and the bundle id `dev.weft.editor` already belong to the host app of the Source Editor Extension (`plugins/xcode/editor-extension/project.yml`), which also exports the file type `dev.weft.screen`.
-- slint-bindings (`listepo/slint-bindings`, `main` at `2b9fa96`): the table under "What M1 needs from T68".
-
-**Architecture (recommended).**
-
-```text
-studio/macos (SwiftUI + AppKit)                studio/windows (WinUI 3, C#)
-  menus, NSOpenPanel, NSSavePanel                MenuBar, FileOpenPicker, FileSavePicker
-  SlintNSView (from slint-bindings)              SlintPanel (from slint-bindings)
-     │ ws_* editor API   │ sb_* surface             │ ws_*            │ sb_*
-     └──────── one Rust library: libweft_studio_ffi (.a on macOS, .dll on Windows) ────────┘
-        crates/weft-studio-ffi   ws_* C ABI; links slint-bindings-ffi, so sb_* ship in the same library
-        crates/weft-studio       document core: open, save, project, render input (no Slint)
-        crates/weft-slint        generate; new `runtime` feature: interpreter compile and sample data
-        slint-bindings-core/-ffi (git dependency): host-driven platform, EmbeddedHost, SbHost
-```
-
-- Rust owns the document and the Slint component. A shell holds two opaque handles, `WsEditor*` for the document and `SbHost*` for the surface, and never sees Weft markup or Slint source. The existing slint-bindings views draw the surface and feed it input; the shells add only chrome and dialogs, so no editor logic is written twice.
-- One Rust library per app. Two Rust static libraries in one app would each carry a copy of Slint, and the screen component would not find the platform that slint-bindings installed.
-
-**Where the code lives.**
-
-| Path | What it holds |
-| --- | --- |
-| `crates/weft-studio` | The document core and the editor API as Rust types. No Slint, no FFI, the workspace lints unchanged. |
-| `crates/weft-studio-ffi` | The `ws_*` C ABI. `crate-type = ["rlib"]`; the static library and the DLL are built on demand, as slint-bindings' justfile does. Its own `[lints]` set `unsafe_code = "deny"` and allow it only in the `extern "C"` module, as `weft-node` does. Committed `include/weft_studio.h` (cbindgen) and `NativeMethods.g.cs` (csbindgen), both checked by a drift test, as `scull-ffi` does. |
-| `studio/macos` | XcodeGen `project.yml` (as `plugins/xcode` uses it), the SwiftUI app WeftStudio, bundle id `dev.weft.studio`, macOS 14, arm64 only. |
-| `studio/windows` | `WeftStudio.WinUI` (.NET 10, Windows App SDK 2.5.1 like the slint-bindings control, unpackaged, x64 and ARM64) and `WeftStudio.Tests`. |
-| `studio/test`, `studio/moon.yml` | Vitest drivers that build and smoke-test each shell and skip with a message on the other OS or without its toolchain, as `plugins/xcode/test` does; the task `studio:test`. |
-
-**Depending on slint-bindings.** Recommended: a Cargo git dependency on `slint-bindings-core` and `slint-bindings-ffi` from https://github.com/listepo/slint-bindings, pinned by `rev`. That rev is the only pin. The Swift package and the C# control come from the checkout Cargo made of the same commit: `cargo metadata` gives the `manifest_path` of `slint-bindings-ffi`, and a script passes the checkout to XcodeGen as `${SLINT_BINDINGS_DIR}` (a local package) and to MSBuild as a generated, gitignored `.props` file (a `ProjectReference`). For co-development, a gitignored `.cargo/config.toml` `[patch]` points at a sibling checkout and moves all three languages at once, the way ketch consumes `file-backup` (`rust.md`, "Shared crates across projects"). Rejected: a path dependency (`rust.md`: a bare path breaks every standalone checkout and CI run of a public repo); a published crate (slint-bindings is `publish = false`, and its core depends on the vendored `slint-embed` path crate); a git submodule (every agent worktree would need its own `git submodule update`). When slint-bindings ships packages (its T9: XCFramework, NuGet), the shells switch to them.
-
-**Build and checks.**
-
-- macOS: XcodeGen 2.46.0 (already in `mise.toml`). A pre-build script phase runs `cargo rustc -p weft-studio-ffi --crate-type staticlib --target aarch64-apple-darwin` (`--release` for Release); the app links that library and the frameworks slint-bindings' `Package.swift` lists (AppKit, CoreFoundation, CoreGraphics, CoreText, Foundation). Signed ad hoc, no App Sandbox in M1 (decision 5).
-- Windows: `dotnet build studio/windows`; a `BeforeBuild` target runs `cargo rustc -p weft-studio-ffi --crate-type cdylib --target x86_64-pc-windows-msvc` (or `aarch64-pc-windows-msvc`) and copies the DLL next to the app.
-- moon: `root:rust-test` and `root:rust-lint` already cover `crates/**` with `--workspace --all-features`, so the core, the runtime feature and the headless FFI tests run in the full check on any OS (the software platform needs no window). `studio` joins `.moon/workspace.yml` and `pnpm-workspace.yaml`; `studio:test` runs the macOS legs on a Mac with Xcode and the Windows legs on Windows with the .NET SDK. The full check runs on macOS by hand today, and the open T73 pull request (#4) adds a macOS runner only, so nothing automated builds the Windows shell (decision 4).
-
-**Slint at run time: interpreter, not compile-time `.slint`.** `slint-build` compiles `.slint` files when the app is built; the editor opens files the user picks at run time, so only `slint-interpreter` fits. It loads `.slint` source at run time (`Compiler::build_from_source`, `ComponentDefinition::create`), and its `ComponentInstance` implements `ComponentHandle`, which is the bound of slint-bindings' `EmbeddedHost<C: ComponentHandle>`: an interpreted screen goes into the existing host unchanged. The build is `async`, but only truly so with a file loader; without one a poll loop is enough, as Weft's tests already do. Features: `compat-1-18` and `std` without defaults (no backend, no renderer), because slint-bindings supplies the platform and the software renderer. Both repositories must resolve to one `i-slint-core`: slint-bindings pins `=1.18.1` and Weft's lockfile has 1.18.1. Style `fluent` on both platforms, as the screenshot baselines use. For later milestones: several screens on one surface (M2) cannot use `ComponentContainer` or `component-factory`, because in 1.18.1 the compiler removes both from its builtin register unless experimental features are on, and `slint::ComponentFactory` is `#[doc(hidden)]` and deprecated as "made public by mistake". M2 will compile one source that holds the editor's own components and the screens as sub-components, with a `weft-slint` option to emit a plain component instead of `inherits Window`. M1 needs neither, and the API below leaves room for both.
-
-**Editor API v0** (`include/weft_studio.h`):
-
-```c
-typedef struct WsEditor WsEditor;
-typedef void (*WsEventFn)(void *user_data, const char *event_json);
-
-uint32_t ws_api_version(void);                                    /* 0; a shell refuses any other */
-WsEditor *ws_editor_new(WsEventFn on_event, void *user_data);
-void ws_editor_free(WsEditor *editor);
-bool ws_open(WsEditor *editor, const char *path);                 /* UTF-8 path from the native dialog */
-bool ws_save(WsEditor *editor, const char *path);                 /* NULL: the current path */
-char *ws_state_json(const WsEditor *editor);                      /* free with ws_string_free */
-struct SbHost *ws_surface_new(WsEditor *editor, uint32_t width, uint32_t height, float scale);
-void ws_string_free(char *text);
-const char *ws_last_error(void);
-```
-
-- **Threads.** Every call comes from the thread that created the editor (the UI thread), as slint-bindings requires. Slint calls back synchronously while it dispatches input.
-- **Errors.** A failed call returns `false` or `NULL` and leaves a message for `ws_last_error` (thread-local, valid until the next call). Every entry point catches panics; a null pointer or a string that is not UTF-8 is an error.
-- **Open.** Reads the file (at most 2 MB, the bound `weft-slint` puts on Slint input), finds and loads the project (SPEC §10.1–§10.2, never fatal: project diagnostics are kept), and parses the markup with the project's catalog and tokens, leniently. A syntax error refuses the open with its diagnostics; a document with validation errors opens and cannot render. M1 opens `.weft` markup only, not canonical JSON.
-- **Save.** Writes `serialize(document)` atomically (a temporary file in the same directory, then a rename), so a saved file is canonical and `weft fmt` leaves it unchanged; an unedited canonical file saves byte-identical. Saving to another path makes it the document's path.
-- **State.** `{"v":0,"path":…,"title":…,"screen":…,"dirty":false,"diagnostics":[…]}`; `title` is the file name, `dirty` is always false until M3 brings edits.
-- **Surface.** `ws_surface_new` generates Slint from the document (`weft_slint::generate` with the project's catalog and tokens), compiles it with the interpreter, fills the data properties from the project's `render.data` sample data when it is set (SPEC §10.6; no new setting), connects `perform(action, id)` to an `action` event, and returns a new `SbHost` that the shell owns and frees with `sb_host_free`. A refused screen returns `NULL` with the generator's message. The editor keeps only a weak handle to the component.
-- **Events** (JSON with `"v":0`): `{"type":"changed"}` after an open or a save (the shell reads `ws_state_json` for the title), and `{"type":"action","action":…,"id":…}` when the screen calls `perform`. Input reaches the screen through the `sb_host_*` calls of the slint-bindings views; M1 is a live preview (decision 7).
-- **Later, without changing v0:** `ws_apply_patches` (SPEC §7 through `weft_core::apply_patches`; undo and redo as inverse patches), selection, and selection events (M2–M3).
-
-**What M1 needs from T68.**
-
-| Need | slint-bindings today (`2b9fa96`) | Gap | Blocks |
-| --- | --- | --- | --- |
-| A host-driven platform: software renderer into a host buffer, resize and scale, pointer, key and focus input, timers | `slint-bindings-core` `EmbeddedHost<C: ComponentHandle>`, tested; 1.0 ms per changed frame and 8.4 ms for the first at 1600×1200 (release, Apple Silicon) | none | — |
-| An interpreted component in that host | `EmbeddedHost` is generic, but nothing hosts a `slint_interpreter::ComponentInstance` | G1: a test in slint-bindings that hosts one (its T11 starts there) | T69.1c |
-| A C ABI host over any component, made by another crate | `SbHost` wraps `EmbeddedHost<DemoForm>`; `sb_demo_new` is the only constructor, and the type is private | G2: `SbHost` over an interpreted component, plus a public Rust constructor (`SbHost::into_raw`) so a downstream crate returns `SbHost*`; the `sb_*` symbols stay exported when `slint-bindings-ffi` is linked as an rlib into another library | T69.1c |
-| A SwiftUI/AppKit view for a host made elsewhere, usable from another package | `SlintNSView` creates its own demo `SlintHost`; the library target links `../target/debug/libslint_bindings_ffi.a` through `unsafeFlags`, which SwiftPM refuses in a package another package depends on | G3: `SlintNSView` and `SlintHost` take the host from the caller; the library target links no Rust library (the app does); the `sb_demo_*` calls leave the library target | T69.1d |
-| A WinUI 3 control for a host made elsewhere | A skeleton never compiled (its T6); `SlintPanel` creates its own host | G4: it builds and runs on Windows (T6) and takes the host from the caller | T69.1e |
-| One Slint version | `=1.18.1` exact pins; Weft at 1.18.1 | none; upgrades move together | — |
-| Keyboard map and IME, popups, accessibility, GPU, packaging | its T4, T10, T14, T7–T8, T9, all todo | not needed for M1: ASCII typing works, and M1 only shows the screen | — |
-| The FFI guard (panic catch, last error) | private in `slint-bindings-ffi` | optional: public, so `ws_*` reuse it and share `sb_last_error`; otherwise `weft-studio-ffi` keeps a copy of about 30 lines | — |
-
-**G1–G4 are delivered** in slint-bindings `main` at `8971685e01fee6776e5121dffb13e3eb43709437` (the repository moved to `pyrlyn/slint-bindings`; `listepo/slint-bindings` redirects); T69.1c pins that `rev`. G1 and G2: its T11.1 (`291376b`): `slint-interpreter` components, `sb_compile`, `SbHost::new` and `SbHost::into_raw`. G3: its T70 (`a149da9`): `SlintHost(adopting:)`, `SlintNSView` and the SwiftUI `SlintView` take the host from a factory, the `SlintBindings` library target links no Rust library (`just swift-package-check`), and a test shows `crates/weft-slint/tests/fixtures/login.slint` in a SwiftUI window and types into it. G4: its T71 (`8971685`): `SlintHost.Adopt` and `SlintPanel.HostFactory`, MSTest host tests on `windows-latest`, and a CI run that opens the WinUI demo on the same screen and checks the window capture. `sb_host_pixel_size` (T70) gives an adopted host's size.
-
-T68's done criteria ("a Slint component generated by T67 shows and takes input inside a SwiftUI window") cover G1 and part of G2, not G3 or G4 (decision 3). slint-bindings' own plan overlaps Weft: its T12 builds `slint-bindings-weft`, a second Weft → Slint mapping beside `weft-slint`, and its T16 a Slint desktop app for Weft beside T69.
-
-**Sub-tasks** (order: T69.1a and T69.1b now and in parallel; T69.1c after G1–G2; T69.1d after T69.1c and G3; T69.1e after T69.1c, G4 and decision 4):
-
-- **T69.1a. Document core**: done (`done.md`). **T69.1b. Slint runtime**: done (`done.md`).
-- **T69.1c. Editor C ABI**: done (`done.md`). Open-to-first-frame in release on Apple Silicon at 480×800, scale 1: the largest corpus screen (`account`) takes about 110 ms as the first surface of a process (platform install included) and 40–80 ms after it; the compile is about 50 ms of that, so no definition cache. The first launch of a freshly linked binary adds a one-off 3–5 s inside the first `SbHost::new`, gone on every later launch.
-- **T69.1d. macOS shell**: done (`done.md`).
-- **T69.1e. Windows shell**: done (`done.md`), with T69.1f: the `studio-windows` job of `ci.yml` builds and tests the shell on `windows-latest`.
-
-**Done when** the four checks above pass on their platforms, the full check exits 0, every corpus screen opens and renders in both apps through the native open dialog and saves through the native save dialog (byte-identical when unedited), and neither shell contains embedding code of its own: the surfaces are slint-bindings' `SlintNSView` and `SlintPanel`.
-
-**Decisions** (the creator approved the recommendation, the first option, of each):
-
-1. **Name.** WeftStudio: folder `studio/`, crates `weft-studio` and `weft-studio-ffi`, bundle id `dev.weft.studio`, because WeftEditor and `dev.weft.editor` are taken by the Xcode extension's host app. The alternative is to rename that app.
-2. **The slint-bindings dependency.** A git dependency pinned by `rev`, with the Swift and C# parts found through `cargo metadata`, as above. Alternatives: a submodule, or waiting for slint-bindings' packages (its T9, milestone M4).
-3. **T68's scope.** Add G1–G4 to T68's done criteria, or as tasks in slint-bindings, because T69.1c–e cannot start without them. Drop or re-scope slint-bindings T12 (`slint-bindings-weft`) and T16 (a Slint desktop app for Weft): they duplicate `weft-slint` and T69. Approved and recorded here only: slint-bindings and T68 belong to another agent, which takes G1–G4 and the re-scope there.
-4. **Windows verification.** No one in this workspace has built the WinUI code yet, and there is no Windows runner. Recommended: a Windows job after T73 lands (`cargo nextest run -p weft-studio -p weft-studio-ffi` and the Windows leg of `studio:test`), as its own task. The alternative is the creator's Windows machine, by hand. Approved: T69.1f in `roadmap.md`.
-5. **App Sandbox.** M1 runs unsandboxed with ad hoc signing. A sandboxed app that `NSOpenPanel` gives one file cannot read the `weft.json`, tokens and catalog in the directories above it (SPEC §10.1) — **unverified**, from Apple's App Sandbox guide, whose page renders by script. Choose in milestone 6: open a project folder, or ask for its directory.
-6. **Save.** Always canonical; the alternative keeps the original bytes of an unedited non-canonical file.
-7. **Input in M1.** A live preview: pointer and keyboard reach the screen, and its `perform` calls arrive as `action` events. The alternative is a static picture until M2's selection mode.
-8. **Style.** `fluent` on both platforms, with no `weft.json` key while it is not a user option. The alternative is the platform style (`cupertino` on macOS).
-9. **Slint licence for distributed builds.** The Royalty-free licence 2.0 needs the `AboutSlint` widget in an About dialog reachable from the top-level menu, or the Slint badge on the public download page; GPLv3 is the other no-cost licence. With native-only chrome, the badge. Decide before milestone 6; M1 ships nothing.
-10. **Sample data.** Only the existing `render.data` key. The alternative, a `data.json` beside the screen as the corpus has, is a new convention and needs a SPEC change.
-
-**Risks.**
-
-- Open latency: every open compiles the screen and `std-widgets` (about 50 ms); T69.1c measured about 110 ms to the first frame of the largest screen, so nothing is cached.
-- App size: the interpreter carries the Slint compiler.
-- Slint upgrades must move Weft and slint-bindings together (exact pins there; T69.1c checks for one `i-slint-core`).
-- CPU rendering of large windows until slint-bindings' GPU milestone (its T7–T8).
-- The surface is invisible to VoiceOver and Narrator until slint-bindings T14, so the UI tests check it by screenshot.
-- `#[no_mangle]` functions of an rlib can be left out of a library that never references the crate; T69.1c references it and checks the exports.
-- `slint-embed` is a path dependency inside the slint-bindings repository, under `flutter/`; T69.1c confirms that it resolves from the git checkout.
-
-**Not in M1:** editing, patches, undo and redo, more than one screen, the canvas, selection, the layers tree and the inspector, recent files and the document browser, settings, autosave, canonical JSON documents, sandboxing, signing and packaging, GPU rendering, IME beyond ASCII, accessibility.
-
-**Sources** (checked 2026-10-08):
-
-- slint-interpreter 1.18.1: run-time loading, `ComponentInstance` implements `ComponentHandle`, the async build: https://docs.rs/slint-interpreter/1.18.1/slint_interpreter/
-- Slint 1.18.1, experimental `ComponentContainer` and `component-factory`: https://github.com/slint-ui/slint/blob/v1.18.1/internal/compiler/typeregister.rs (`builtin` removes both) and https://github.com/slint-ui/slint/blob/v1.18.1/api/rs/slint/lib.rs (`ComponentFactory` hidden and deprecated)
-- Slint licences 1.18.1: https://github.com/slint-ui/slint/blob/v1.18.1/LICENSE.md and https://github.com/slint-ui/slint/blob/v1.18.1/LICENSES/LicenseRef-Slint-Royalty-free-2.0.md
-- Cargo git dependencies (found anywhere in the repository, locked in `Cargo.lock`): https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
-- SwiftPM 6.4.0, unsafe flags make a product ineligible for other packages: https://github.com/swiftlang/swift-package-manager/blob/swift-6.4.0-RELEASE/Sources/Runtimes/PackageDescription/BuildSettings.swift
-- XcodeGen 2.46.0, `${VARIABLE}` in the spec and local packages: https://github.com/yonaskolb/XcodeGen/blob/2.46.0/Docs/ProjectSpec.md
-- Windows App SDK pickers (1.8 and later, `AppWindow.Id`, `PickFileResult.Path`; page dated 2026-07-15): https://learn.microsoft.com/en-us/windows/apps/develop/files/using-file-folder-pickers
-- FlaUI v5.0.0 (2025-02-25; repository active, last push 2026-08-13): https://github.com/FlaUI/FlaUI
-- slint-bindings at `2b9fa96` (2026-10-07): its `README.md`, `plan.md`, `done.md` (T2 frame times), `crates/slint-bindings-core/src/host.rs`, `crates/slint-bindings-ffi/src/lib.rs`, `swift/Package.swift`, `swift/Sources/SlintBindings/`, `windows/README.md`: https://github.com/listepo/slint-bindings/tree/2b9fa96b17464a628970ce1e1d6628b8c2580b30
-- Apple App Sandbox, user-selected files (**unverified**: the page renders by script): https://developer.apple.com/documentation/security/accessing-files-from-the-macos-app-sandbox
+Milestone 1 is done (T69.1, `done.md`). The next milestone is the canvas.
 
 ### T106. Weft plugin for cox
 
@@ -280,17 +147,6 @@ What exists (checked on origin/main): the MCP server is `packages/mcp` (nine too
 The cox tasks the T106.6 proposal defines, as built: T33.47.1–T33.47.10 in pyrlyn/cox (`docs/design/plugin-canvas.md`, A156, branch `t33.47-plugin-canvas`); cox's A157 split T33.47.8 into T33.47.8.1–T33.47.8.10, one layer each, and added T33.47.10, a fix. They cover the plugin-API types, manifest key and grant line, the host calls and SDK arms, the `cox-app` state, wire and FFI, the isolated `CanvasPage`, the pane, its shortcut and palette rows, and the user docs. Done when their checks pass in cox and the branch is pushed. The Weft plugin's `cox-plugin-sdk` pin moves to that branch in T106.8.
 
 Status: every cox card is done and pushed (branch head `fd35f0d0`) but T33.47.8's last checks: by hand, ⌘⇧D and the palette row toggle the pane, two frames show, and a click adds a chip that a second click replaces; and the falsifier 3 measurement in Instruments. Both need a person at the app, so they are with the creator.
-
-### T105. Weft to WinUI 3 and back
-
-Convert a Weft screen into a WinUI 3 page for a Windows App SDK app, and read WinUI XAML back into Weft, as T67 does for Slint and T34 for SwiftUI. The design is `docs/winui-design.md`; the external facts, with sources, are `research.md` §23.
-
-**Decisions (creator).** A new target modelled on `crates/weft-slint` and `crates/weft-swiftui`. The output is a XAML `Page` that binds with `{x:Bind}` to a generated C# view model: data paths are its properties, the actions of `on-<event>` are its commands. The importer reads the XAML only; the C# is derived. Checked locally by golden files, XML checks and round trips, and in CI by a Windows job that `dotnet build`s a WinUI project holding every generated corpus screen; screenshots may follow as a separate task. The creator approves the design before any code.
-
-**Execution plan (this round, design only).** Write `docs/winui-design.md` (mapping of every core kind and prop, tokens, layout vocabulary, bindings, events, slots, light and dark, losses, round trip, XML parser, CI job, open questions), `research.md` §23, and the sub-tasks below. The creator approved the design and accepted the recommendation of every open question in `docs/winui-design.md`, including a `roxmltree` row in the workspace `rust.md` when T105.8 adds the crate; T105.1 may start.
-
-**Done when** every sub-task is done: every corpus screen and catalog example generates, its golden files build in the Windows job, `import_winui(generate(x)) == x` for each, `read_winui` reads the generated XAML without its source comment with only the losses SPEC §9 lists, and SPEC §9, §10.6, AGENT-SPEC and the crate README describe the target.
-
 
 ### T903. macOS studio UI test: Save As writes nothing locally
 

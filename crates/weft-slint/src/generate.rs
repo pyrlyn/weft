@@ -42,12 +42,68 @@ pub enum GenerateError {
     Unsupported(Vec<Unsupported>),
 }
 
+/// A screen as a component a host places inside its own `Window` (SPEC §9, "To Slint").
+/// Several of these share one file; the host's window is the only exported component.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EmbeddedComponent {
+    /// `<Name>Screen`, the same name `generate` would export.
+    pub name: String,
+    /// The `std-widgets.slint` names the component uses, sorted.
+    pub imports: Vec<&'static str>,
+    /// `component <Name>Screen inherits Rectangle { ... }`, with no import line and no source comment.
+    pub source: String,
+}
+
 /// The `.slint` source of `document`: an exported `Window` component with one `in-out property`
 /// per data path, a `perform(action, id)` callback, and the screen's elements.
 pub fn generate(
     document: &Document,
     options: &GenerateOptions<'_>,
 ) -> Result<String, GenerateError> {
+    let markup = serialize(document);
+    let rendered = render(document, options, false)?;
+    let mut head = match options.name {
+        Some(n) => format!("{MARKER} name={n}\n"),
+        None => format!("{MARKER}\n"),
+    };
+    for line in markup.lines() {
+        head.push_str(&format!("// {line}\n"));
+    }
+    if !rendered.imports.is_empty() {
+        let list: Vec<&str> = rendered.imports.iter().copied().collect();
+        head.push_str(&format!(
+            "\nimport {{ {} }} from \"std-widgets.slint\";\n",
+            list.join(", ")
+        ));
+    }
+    Ok(format!("{head}\n{}", rendered.body))
+}
+
+/// The same screen as [`generate`], without `export` and without `Window`, so a host can place
+/// several screens in one surface. A `menu` is refused: a `MenuBar` is legal only in a `Window`.
+pub fn generate_embedded(
+    document: &Document,
+    options: &GenerateOptions<'_>,
+) -> Result<EmbeddedComponent, GenerateError> {
+    let rendered = render(document, options, true)?;
+    Ok(EmbeddedComponent {
+        name: rendered.name,
+        imports: rendered.imports.into_iter().collect(),
+        source: rendered.body,
+    })
+}
+
+struct Rendered {
+    name: String,
+    imports: BTreeSet<&'static str>,
+    body: String,
+}
+
+fn render(
+    document: &Document,
+    options: &GenerateOptions<'_>,
+    embedded: bool,
+) -> Result<Rendered, GenerateError> {
     let types = token_types(options.tokens);
     let diagnostics = validate_document(
         document,
@@ -61,10 +117,9 @@ pub fn generate(
     if has_errors(&diagnostics) {
         return Err(GenerateError::Invalid(diagnostics));
     }
-    // The source comment keeps the screen as written (SPEC §9, Provenance): instance-path ids
-    // break the id grammar, so an expanded comment would not read back.
-    let source = serialize(document);
     // A use means its fragment's body (SPEC §10.7); validation reported any cycle or excess.
+    // The source comment of `generate` keeps the screen as written (SPEC §9, Provenance):
+    // instance-path ids break the id grammar, so an expanded comment would not read back.
     let expanded = weft_core::expand(document, options.catalog).document;
     let document = &expanded;
     let mut problems = vec![];
@@ -82,30 +137,22 @@ pub fn generate(
         aliases: vec![],
         hooks: vec![],
         inits: vec![],
+        embedded,
     };
-    let name = options
+    let bare = options
         .name
         .or(document.root.id.as_deref())
         .unwrap_or("screen");
-    g.screen(&document.root, &format!("{}Screen", type_name(name)));
+    let name = format!("{}Screen", type_name(bare));
+    g.screen(&document.root, &name);
     if !g.problems.is_empty() {
         return Err(GenerateError::Unsupported(g.problems));
     }
-    let mut head = match options.name {
-        Some(n) => format!("{MARKER} name={n}\n"),
-        None => format!("{MARKER}\n"),
-    };
-    for line in source.lines() {
-        head.push_str(&format!("// {line}\n"));
-    }
-    if !g.imports.is_empty() {
-        let list: Vec<&str> = g.imports.iter().copied().collect();
-        head.push_str(&format!(
-            "\nimport {{ {} }} from \"std-widgets.slint\";\n",
-            list.join(", ")
-        ));
-    }
-    Ok(format!("{head}\n{}", g.out))
+    Ok(Rendered {
+        name,
+        imports: g.imports,
+        body: g.out,
+    })
 }
 
 fn path_of(node: &Node) -> String {
@@ -159,6 +206,8 @@ struct Gen<'a> {
     aliases: Vec<String>,
     hooks: Vec<String>,
     inits: Vec<String>,
+    /// A component for a host window, not an exported `Window` of its own.
+    embedded: bool,
 }
 
 impl Gen<'_> {
@@ -279,8 +328,17 @@ impl Gen<'_> {
     }
 
     fn screen(&mut self, root: &Node, name: &str) {
-        self.line(0, &format!("export component {name} inherits Window {{"));
-        self.bind_line(1, root, "label", "title", Ty::Str);
+        if self.embedded {
+            // Rectangle, not the layout: a layout root has no accessible name, and the screen's
+            // label still has to be said. The box fills the rectangle the host sizes.
+            self.line(0, &format!("component {name} inherits Rectangle {{"));
+            // A label needs a role (Slint 1.18). `screen`'s role is `main`.
+            self.line(1, "accessible-role: AccessibleRole.main;");
+            self.bind_line(1, root, "label", "accessible-label", Ty::Str);
+        } else {
+            self.line(0, &format!("export component {name} inherits Window {{"));
+            self.bind_line(1, root, "label", "title", Ty::Str);
+        }
         let props: Vec<String> = self
             .data
             .props
@@ -301,13 +359,28 @@ impl Gen<'_> {
         }
         self.line(1, "callback perform(string, string);");
         self.out.push('\n');
-        // A MenuBar is legal only as a direct child of Window, so every menu is emitted here.
-        self.hoist_menus(root);
+        if self.embedded {
+            // A MenuBar is legal only in a Window (Slint 1.18), so a menu has no form here.
+            self.refuse_menus(root);
+        } else {
+            // A MenuBar is legal only as a direct child of Window, so every menu is emitted here.
+            self.hoist_menus(root);
+        }
         self.imports.insert("VerticalBox");
         self.open(1, root, "VerticalBox", &[]);
         self.line(2, "alignment: LayoutAlignment.start;");
+        if self.embedded {
+            self.line(2, "width: 100%;");
+            self.line(2, "height: 100%;");
+        }
         self.children(root.children.iter(), 2);
         self.line(1, "}");
+        if self.embedded
+            && let Some(id) = root.id.as_deref().map(element_name)
+        {
+            self.line(1, &format!("preferred-width: {id}.preferred-width;"));
+            self.line(1, &format!("preferred-height: {id}.preferred-height;"));
+        }
         let inits = self.inits.clone();
         if !inits.is_empty() {
             self.line(1, "init => {");
@@ -1111,6 +1184,24 @@ impl Gen<'_> {
                 "changed {shown} => {{ if !{shown} && {show} {{ {} }} }}",
                 stmts.join(" ")
             ));
+        }
+    }
+
+    fn refuse_menus(&mut self, node: &Node) {
+        if node.kind == "menu" {
+            self.unsupported(node, "a menu is a MenuBar, which belongs to a Window");
+        }
+        for child in &node.children {
+            if let Child::Node(inner) = child {
+                self.refuse_menus(inner);
+            }
+        }
+        for slot in node.slots.values() {
+            for child in slot {
+                if let Child::Node(inner) = child {
+                    self.refuse_menus(inner);
+                }
+            }
         }
     }
 

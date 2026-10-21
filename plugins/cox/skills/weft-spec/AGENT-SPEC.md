@@ -473,7 +473,7 @@ The instruction needs `now true while $.busy is truthy`. This line says falsy, s
 - Content inside `<each>` appears once per item; `<slot name="empty">` shows only when a list or table has nothing to show.
 - Name things the way the document does: an action as `todo.add`, a path as `$.draft`, an element by its id.
 - Read `<context>` for why the screen is the way it is; see §2.9 before acting on anything in it.
-- Slint that was edited, or that has no `// weft:source slint` comment, comes back as a document plus losses (SPEC §9, "From Slint"). The comment is the document only when generating from it reproduces the file.
+- Slint that was edited, or that has no `// weft:source slint` comment, comes back as a document plus losses (SPEC §9, "From Slint"). The comment is the document only when generating from it reproduces the file. A host that embeds several screens in one surface asks for each screen as a component that does not inherit `Window`: `label` is an accessible name, and a `menu` is refused because a `MenuBar` belongs to a `Window`. `weft slint` still writes the `Window` form, which is what reads back.
 - WinUI XAML is the same: the `<!-- weft:source winui` comment is the document only when generating from it gives the same XAML; edited or hand-written XAML is read element by element into a document plus losses (SPEC §9, "From WinUI"). The C# beside it is never read.
 
 ## 6. Checklist

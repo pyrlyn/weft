@@ -11,8 +11,8 @@ mod common;
 use weft_catalog::token_types;
 use weft_core::{Mode, ValidateOptions, serialize, validate_document};
 use weft_slint::{
-    GenerateError, GenerateOptions, ImportError, ImportOptions, MAX_SOURCE_LENGTH, generate,
-    import_slint, read_slint, runtime,
+    EmbeddedComponent, GenerateError, GenerateOptions, ImportError, ImportOptions,
+    MAX_SOURCE_LENGTH, generate, generate_embedded, import_slint, read_slint, runtime,
 };
 
 use common::{document, exported_component, here, screens, setup};
@@ -298,4 +298,102 @@ fn layout_props_read_back_without_the_source_comment() {
         button.props.get("grow"),
         Some(&weft_core::Value::Bool(true))
     );
+}
+
+/// One host window holding the embedded components, the shape milestone 2 compiles.
+fn host_of(parts: &[EmbeddedComponent]) -> String {
+    let mut imports = std::collections::BTreeSet::new();
+    for part in parts {
+        imports.extend(part.imports.iter().copied());
+    }
+    let mut out = String::new();
+    if !imports.is_empty() {
+        let list: Vec<&str> = imports.into_iter().collect();
+        out.push_str(&format!(
+            "import {{ {} }} from \"std-widgets.slint\";\n\n",
+            list.join(", ")
+        ));
+    }
+    for part in parts {
+        out.push_str(&part.source);
+        if !part.source.ends_with('\n') {
+            out.push('\n');
+        }
+        out.push('\n');
+    }
+    out.push_str("export component Host inherits Window {\n");
+    for part in parts {
+        out.push_str(&format!("    {} {{}}\n", part.name));
+    }
+    out.push_str("}\n");
+    out
+}
+
+#[test]
+fn an_embedded_screen_compiles_inside_a_host_window() {
+    let (catalog, tokens) = setup();
+    let mut embedded = Vec::new();
+    let mut refused = Vec::new();
+    for (name, path) in screens() {
+        let doc = document(&std::fs::read_to_string(&path).unwrap(), &catalog, &tokens);
+        let options = GenerateOptions {
+            catalog: &catalog,
+            tokens: &tokens,
+            name: None,
+        };
+        match generate_embedded(&doc, &options) {
+            Ok(part) => {
+                assert!(
+                    part.source
+                        .starts_with(&format!("component {} inherits Rectangle {{", part.name)),
+                    "{name}"
+                );
+                assert!(!part.source.contains("inherits Window"), "{name}");
+                assert!(!part.source.contains("export component"), "{name}");
+                let host = host_of(std::slice::from_ref(&part));
+                let (errors, built) = compile(&host, "Host");
+                assert!(errors.is_empty() && built, "{name}: {errors:#?}\n{host}");
+                embedded.push((name, part));
+            }
+            Err(GenerateError::Unsupported(problems)) => {
+                assert!(
+                    problems
+                        .iter()
+                        .all(|problem| problem.message.contains("MenuBar")),
+                    "{name}: {problems:?}"
+                );
+                assert!(generate(&doc, &options).is_ok(), "{name}");
+                refused.push(name);
+            }
+            Err(error) => panic!("{name}: {error}"),
+        }
+    }
+    // Corpus screens that carry a menu: a MenuBar cannot leave the Window form.
+    assert_eq!(refused, ["inbox", "menu"]);
+    let login = embedded
+        .iter()
+        .find(|(name, _)| name == "login")
+        .expect("login");
+    assert!(
+        login
+            .1
+            .source
+            .contains("accessible-role: AccessibleRole.main;")
+    );
+    assert!(login.1.source.contains("accessible-label: \"Sign in\";"));
+    assert!(
+        login
+            .1
+            .source
+            .contains("preferred-width: login.preferred-width;")
+    );
+    assert!(login.1.source.contains("width: 100%;"));
+    assert!(!login.1.source.contains("title:"));
+    let other = embedded
+        .iter()
+        .find(|(name, _)| name != "login")
+        .expect("a second screen");
+    let host = host_of(&[login.1.clone(), other.1.clone()]);
+    let (errors, built) = compile(&host, "Host");
+    assert!(errors.is_empty() && built, "{errors:#?}\n{host}");
 }

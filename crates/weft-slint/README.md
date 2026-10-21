@@ -9,6 +9,7 @@ Weft to Slint and back (SPEC §9, "To Slint" and "From Slint").
 ```rust
 let slint = weft_slint::generate(&document, &GenerateOptions { catalog: &catalog, tokens: &tokens, name: None })?;
 let document = weft_slint::import_slint(&slint, &ImportOptions { catalog: &catalog, tokens: &tokens })?;
+let embedded = weft_slint::generate_embedded(&document, &GenerateOptions { catalog: &catalog, tokens: &tokens, name: None })?;
 ```
 
 The crate is pure Rust over `weft-core` and `weft-catalog`. The Slint compiler (`slint-interpreter`) is a dev-dependency: the tests compile every generated file with it. Reading a file the generator did not print uses `i-slint-compiler`'s syntax tree, behind the `import` feature, with no renderer and no backend. The screenshot tests add the testing backend's software renderer, which the library itself does not depend on.
@@ -23,7 +24,7 @@ The crate is pure Rust over `weft-core` and `weft-catalog`. The Slint compiler (
 | --- | --- |
 | Source comment | `// weft:source slint` and the canonical markup, one line per comment line |
 | Imports | Only the std widgets the screen uses |
-| Component | `export component <Name>Screen inherits Window`, `title` from the screen's `label` |
+| Component | `export component <Name>Screen inherits Window`, `title` from the screen's `label`. `generate_embedded` prints `component <Name>Screen inherits Rectangle` instead, not exported, so a host can place several screens in its own window: the role is `main`, `label` is `accessible-label`, the preferred size is the screen box's, and a `menu` is refused (`MenuBar` belongs to a `Window`) |
 | Data | One `in-out property` per root data path a binding reads: `$.email` → `email`, `$.user.email` → `user-email` |
 | Actions | `callback perform(string, string)`: the action name and the id of the element |
 | Body | A `VerticalBox` named after the screen id, holding the elements |
