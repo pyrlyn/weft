@@ -1,5 +1,15 @@
 # Done
 
+### T105. Weft to WinUI 3 and back
+
+Convert a Weft screen into a WinUI 3 page for a Windows App SDK app, and read WinUI XAML back into Weft, as T67 does for Slint and T34 for SwiftUI. The design is `docs/winui-design.md`; the external facts, with sources, are `research.md` §23. The creator approved the design and every open question there before T105.1.
+
+Done when every sub-task is done: every corpus screen and catalog example generates, its golden files build in the Windows job, `import_winui(generate(x)) == x` for each, `read_winui` reads the generated XAML without its source comment with only the losses SPEC §9 lists, and SPEC §9, §10.6, AGENT-SPEC and the crate README describe the target.
+
+Result: T105.1 through T105.18 are done (their cards in this file). `PENDING` in `crates/weft-winui/tests/common/mod.rs` is empty, so every corpus screen and catalog example generates and has goldens. `generated_xaml_reads_back_to_the_same_document` checks `import_winui(generate(x)) == x`, and `generated_pages_read_back_without_their_comment` checks the XAML read with the source comment removed. SPEC §9 (To WinUI, From WinUI, the loss table), §10.6, AGENT-SPEC and `crates/weft-winui/README.md` describe the target. The `winui` job builds those goldens. Screenshots of the pages stay a later task, as the design left them.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 5
+Check: the sub-tasks' checks; `PENDING` is empty.
+
 ### T16.3. Layout vocabulary: web generators and the reference renderer
 
 T16 scope items 3 and 5 for the web, as the design's generate table says. Depends on T16.2.
