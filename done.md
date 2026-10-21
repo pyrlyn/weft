@@ -2074,3 +2074,11 @@ First slice of T69 milestone 3 (editing). The document core could open and save 
 **Execution plan.** (1) `Editor::edit`, `undo`, `redo` and `edits` in `crates/weft-studio`, using `apply_patches` with the project's catalog, tokens and actions in the lenient mode `open` uses. No `author`: the host that speaks for a person sets that. (2) `dirty` compares the open document with the one from the last open or successful save. A failed save changes neither. (3) The newest 100 edits are kept. (4) `tests/edit.rs`. No SPEC change and no `weft.json` key: this is not a format change and not a user setting. The `ws_*` ABI is unchanged, so the shells still do not edit.
 
 Result: `edit` returns whether the list applied and whether the document changed. A list that does not validate, names a missing id, or breaks the patch shape is not recorded. An empty list and a `set` of the current value are not edits. `undo` and `redo` put back the document from that side and revalidate it. `markup` is the canonical text without writing the file.
+
+### T69.3c. Patches on the editor C ABI
+
+The document core from T69.3a, on the `ws_*` ABI the shells already load, without a new API version. `ws_apply_patches` takes the patch list as UTF-8 JSON. `ws_undo` and `ws_redo` restore either side. A change sends the existing `changed` event; a refusal leaves the document and puts the diagnostics in `ws_last_error`. The macOS and Windows shells do not call these yet. Done when a headless test opens a screen, applies a patch, undoes and redoes it, and a rejected list leaves the file and the state alone.
+
+**Execution plan.** (1) `WsEditor::edit`, `undo` and `redo` over the document core. (2) The three `ws_*` entry points, with the same pointer and thread checks as `ws_save`. (3) Regenerate `include/weft_studio.h` and the C# bindings. (4) `tests/e2e.rs`. No shell change: a menu that calls them is a later slice, and it needs the platform UI tests.
+
+Result: a list that changes the document returns true and sends `changed`. A list that applies but changes nothing, and undo or redo with nothing to do, return false and leave no error. A list that is not JSON, or that the core rejects, returns false with the message. API version stays 0.

@@ -80,8 +80,11 @@ fn slint_bindings_header() -> PathBuf {
         .as_str()
         .unwrap()
         .to_owned();
+    // The manifest path is the crate's Cargo.toml. The header is two directories above that crate.
     Path::new(&manifest)
-        .join("../../../swift/Sources/CSlintBindings/slint_bindings.h")
+        .parent()
+        .unwrap()
+        .join("../../swift/Sources/CSlintBindings/slint_bindings.h")
         .canonicalize()
         .unwrap()
 }

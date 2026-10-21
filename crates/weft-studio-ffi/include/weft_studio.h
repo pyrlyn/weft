@@ -52,6 +52,29 @@ bool ws_open(struct WsEditor *editor, const char *path);
 // `editor` is null or live; `path` is null or a NUL-terminated string.
 bool ws_save(struct WsEditor *editor, const char *path);
 
+// Applies a patch list (SPEC §7), UTF-8 JSON, with the open document's project. False when no
+// document is open, the text is not JSON, or the list is rejected: the document stays and
+// `ws_last_error` holds the diagnostics. A list that applies without changing the document
+// returns false and leaves no error. A change sends `changed`.
+//
+// # Safety
+// `editor` is null or live; `patches_json` is null or a NUL-terminated string.
+bool ws_apply_patches(struct WsEditor *editor, const char *patches_json);
+
+// Undoes the latest recorded edit. False, and no error, when there is nothing to undo. A change
+// sends `changed`.
+//
+// # Safety
+// `editor` is null or live.
+bool ws_undo(struct WsEditor *editor);
+
+// Reapplies the edit `ws_undo` reversed. False, and no error, when there is nothing to redo.
+// A change sends `changed`.
+//
+// # Safety
+// `editor` is null or live.
+bool ws_redo(struct WsEditor *editor);
+
 // The open document's state as JSON (`v`, `path`, `title`, `screen`, `dirty`, `diagnostics`,
 // `project`, `project_diagnostics`). Null without a document. Free with `ws_string_free`.
 //
