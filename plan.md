@@ -6,6 +6,8 @@ An open, agent-friendly UI description format — strict markup for models, cano
 | --- | --- | --- | --- | --- | --- |
 | T8 | in progress | P1 | 3 | 70% | Claude Code / claude-opus-5-5 |
 | T14 | in progress | P2 | 5 | 75% | Claude Code / claude-opus-5-5 |
+| T69 | in progress | P2 | 5 | 15% | Cursor / grok-4.7 |
+| T69.1 | in progress | P2 | 4 | 95% | Claude Code / claude-opus-5-5 |
 | T69 | todo | P2 | 5 | 0% | |
 | T106 | in progress | P2 | 5 | 95% | Claude Code / claude-opus-5-5 |
 | T106.7 | in progress | P2 | 4 | 95% | Claude Code / claude-opus-5-5 |
@@ -100,6 +102,8 @@ The native shell and the shared surface talk only through the slint-bindings C A
 
 **Milestones** (each becomes a T69.x task with its own plan when claimed, within the task size rule):
 
+1. Skeleton: a native window on each platform hosting one Slint surface through slint-bindings, showing one corpus screen rendered by `weft-slint`; open and save through the native file dialogs.
+2. Canvas: several screens as frames, pan and zoom, rulers, selection and hover from the Weft element tree, keyboard navigation. T69.2b, the canvas model in `weft-studio` (frames, pan, zoom, frame hit-testing, selection and keyboard navigation over the element tree), is done (`done.md`). Rulers and the Slint surface that draws the frames are still open.
 1. Skeleton: done (T69.1, `done.md`). A native window on each platform hosts one Slint surface through slint-bindings, shows one corpus screen rendered by `weft-slint`, and opens and saves through the native file dialogs.
 2. Canvas: several screens as frames, pan and zoom, rulers, selection and hover from the Weft element tree, keyboard navigation.
 3. Editing: move, reorder, insert and delete elements, resize within the layout rules, the layers tree and the property inspector writing Weft patches; undo and redo; validation diagnostics shown on the canvas and in the inspector.

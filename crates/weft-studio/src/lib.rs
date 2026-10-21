@@ -1,7 +1,12 @@
 //! The document core of WeftStudio, the desktop editor (T69): one Weft screen opened from a
 //! `.weft` file with the project above it (SPEC §10.1), saved canonical, and the input a Slint
-//! surface renders. No Slint crate here: the shells' FFI crate compiles the source with the
-//! `weft-slint` runtime, so this core stays testable on its own.
+//! surface renders. [`Canvas`] places several of those screens as frames and keeps the view
+//! (pan, zoom) and the selection. No Slint crate here: the shells' FFI crate compiles the source
+//! with the `weft-slint` runtime, so this core stays testable on its own.
+
+mod canvas;
+
+pub use canvas::{Canvas, Focus, FrameGeom, MAX_ZOOM, MIN_ZOOM};
 
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -146,6 +151,10 @@ impl Editor {
         write_atomic(&target, &serialize(&self.document))?;
         self.path = target;
         Ok(())
+    }
+
+    pub(crate) fn document(&self) -> &Document {
+        &self.document
     }
 
     pub fn state(&self) -> State {
