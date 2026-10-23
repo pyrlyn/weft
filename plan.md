@@ -29,17 +29,79 @@ Not added: Weft → Slint generation stays in `crates/weft-slint` (T69.1 decisio
 | T69.1 | todo | P2 | 4 | 0% | |
 | T12.3 | todo | P2 | 4 | 0% | |
 | T16 | todo | P2 | 5 | 30% | |
-| T16.3 | todo | P2 | 3 | 0% | |
-| T16.8 | todo | P2 | 3 | 0% | |
-| T16.5 | todo | P2 | 3 | 0% | |
-| T16.7 | todo | P2 | 3 | 0% | |
-| T41 | todo | P2 | 2 | 0% | |
-| T96 | todo | P2 | 3 | 0% | |
-| T97 | todo | P2 | 2 | 0% | |
-| T98 | todo | P2 | 2 | 0% | |
-| T99 | todo | P3 | 1 | 0% | |
+| T16.3 | done | P2 | 3 | 100% | Cursor / grok 4.7 |
+| T16.8 | done | P2 | 3 | 95% | MiMo / mimo-v2.6-pro |
+| T16.5 | done | P2 | 3 | 100% | MiMo / MiMo |
+| T16.7 | done | P2 | 3 | 100% | MiMo / mimo-v2.6-pro |
+| T41 | done | P2 | 2 | 95% | MiMo / mimo-v2.6-pro |
+| T96 | done | P2 | 3 | 100% | Cursor / grok 4.7 |
+| T97 | done | P2 | 2 | 100% | MiMo / MiMo |
+| T98 | done | P2 | 2 | 100% | MiMo / MiMo |
+| T99 | done | P3 | 1 | 100% | MiMo / MiMo |
+| T88 | done | P2 | 1 | 100% | MiMo / mimo-v2.6-flash |
+| T90 | done | P2 | 2 | 95% | MiMo / mimo-v2.6-pro |
+| T78 | done | P2 | 2 | 95% | MiMo / mimo-v2.6-pro |
+| T87 | done | P2 | 1 | 100% | MiMo / mimo-v2.6-flash |
+| T93 | done | P2 | 3 | 100% | MiMo / mimo-v2.6-pro |
 | T100 | in progress | P1 | 4 | 80% | Cursor / grok 4.7 |
 | T101 | in progress | P1 | 4 | 90% | Cursor / grok 4.7 |
+
+### T88. Resolver `tree()` matches context keys case-insensitively
+
+From the cloud review: `tree()` matches context keys case-sensitively while `appearance()` does not (`crates/weft-catalog/src/resolver.rs`). A key that `appearance()` accepts is missed by `tree()`, so context inheritance and tokens disagree.
+
+**Plan.**
+1. Reproduce with a unit test in `crates/weft-catalog` (and a TypeScript parity test if the behaviour is exposed through the binding): a key that differs only in case from a parent context entry.
+2. Make `tree()` fold case the same way `appearance()` does; keep the diagnostic and path behaviour unchanged.
+3. `moon run root:changed` exits 0.
+
+Done when: `tree()` and `appearance()` agree on case, a test covers a mixed-case key, and the full check is green.
+
+### T90. Unreferenced insta snapshots
+
+From the cloud review: about 750 insta snapshots and nothing checks for unreferenced ones (`toolchain.md:18`). Orphans pile up and cost review and cache time.
+
+**Plan.**
+1. Run `cargo insta test --unreferenced=reject` once (or the workspace equivalent) and list the orphans.
+2. Delete the true orphans; if any "orphan" is referenced by name from a test, fix the reference rather than keeping a dead file.
+3. Add the same check to the Rust lint/test gate (or a dedicated moon task that `root:changed` reaches) so new orphans fail CI.
+4. `moon run root:changed` exits 0.
+
+Done when: the tree has no unreferenced snapshots, CI rejects a new one, and the full check is green.
+
+### T78. Swift typecheck tests: timeout and cache
+
+From the cloud review: `crates/weft-swiftui/tests/swift.rs` typecheck tests ran 9+ minutes and were killed when the gate failed. They need a nextest timeout and a Swift module cache, or they must stay out of the flaky-runtime batch.
+
+**Plan.**
+1. Read `crates/weft-swiftui/tests/swift.rs` and the nextest config; measure a cold and a warm typecheck.
+2. Give the Swift typecheck a nextest timeout that fails cleanly, and a module cache (or compile cache) keyed by the toolchain and sources so warm runs are cheap. If that is not enough, keep them out of the default batch behind an env flag, as other flaky runtimes are.
+3. Document the timeout and the cache in `toolchain.md` if the toolchain is affected.
+4. `moon run root:changed` exits 0; a second consecutive gate run is not killed.
+
+Done when: a cold run finishes under the timeout, a warm run is materially faster, and the full check is green.
+
+### T87. WASM JSX import stack budget
+
+From the cloud review: `crates/weft-web/src/from_jsx/mod.rs` runs the JSX import on a 64 MiB stack thread only off `wasm32`. On WASM the same path has no such budget. Smallest correct fix first: give WASM the same stack budget where the host allows it, or document the limit and fail cleanly.
+
+**Plan.**
+1. Read `from_jsx/mod.rs` and how the 64 MiB thread is created off-wasm; check what wasm-bindgen / the plugin bundles can do about stack size.
+2. Prefer the same budget on WASM if the host supports it; otherwise document the limit in AGENT-SPEC.md / the relevant README and make a too-deep document fail with W200 (or the existing depth diagnostic) instead of a stack overflow.
+3. A test for the boundary you chose; `moon run root:changed` exits 0. If the change reaches the wasm, run `moon run shared:build` before the bundle tests.
+
+Done when: the WASM path has a stated, tested limit (same budget or a clean diagnostic), and the full check is green.
+
+### T93. Split the two giant importer files
+
+From the cloud review: `crates/weft-swiftui/src/import/read.rs` and `crates/weft-web/src/jsx/mod.rs` are oversized. Split each into smaller modules **in the same crates** (behaviour-preserving refactor only).
+
+**Plan.**
+1. Map the file into cohesive modules (parse, map, losses, diagnostics, …) without changing behaviour; move code, do not rewrite.
+2. Keep public items and diagnostic codes stable; update paths in tests/snapshots only if they named the file.
+3. `moon run root:changed` exits 0; two consecutive runs of the affected Rust tests stay green (cache stable).
+
+Done when: both files are split, the suite is green with no behaviour change, and the full check is green.
 
 ### T96. Too-deep documents: report, do not hide
 
@@ -483,12 +545,12 @@ Penpot installs a plugin only from the URL of its `manifest.json`, and plugins a
 
 **Dependencies.** T73: extend its `ci.yml` rather than adding a second gate; T73 also makes `mise install` work on Linux. The creator enables Pages with the source set to "GitHub Actions" (a repository setting; agents do not change it).
 
-**Open questions for the creator.**
-1. URL: `https://listepo.github.io/weft/penpot/manifest.json` (a subpath, leaving room for other pages) or the site root?
-2. Deploy on every push to `main`, or only on a release tag, so users never get an unreleased plugin?
-3. Runner for the deploy build: GitHub-hosted `ubuntu-latest` or the gate's `xcode-27` runner?
-4. A repository has one Pages site and each deploy replaces it whole: should the deploy assemble a site now (an index page, room for docs or a `render-react` gallery)?
-5. Which icon should the plugin manager show?
+**Open questions for the creator** (defaults adopted for this run; the creator can override in review):
+1. URL: `https://listepo.github.io/weft/penpot/manifest.json` (a subpath, leaving room for other pages) — **adopted**.
+2. Deploy on every push to `main` after the gate — **adopted**.
+3. Deploy build on `ubuntu-latest` (the plugin build needs no Xcode) — **adopted**.
+4. Publish only `plugins/penpot/dist` under the subpath for now; a fuller site is a later task — **adopted**.
+5. Icon: omit unless Penpot's plugin manager requires one; if required, a simple monochrome SVG/PNG checked in under `plugins/penpot` — **adopted**.
 
 ### T101. Inline fragments
 
