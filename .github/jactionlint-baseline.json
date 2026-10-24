@@ -4,10 +4,18 @@
     {
       "file": ".github/workflows/ci.yml",
       "rule": "concurrency-limits",
-      "fingerprint": "c41f0955d93b4ce5",
+      "fingerprint": "48c2d6b5885070b9",
       "context": "081b2e27040f94d3",
       "occurrence": 0,
-      "message": "workflow has no \"concurrency:\", so every run of it executes at the same time even when a newer run supersedes the older ones. add a top-level \"concurrency:\" with a \"group:\" and \"cancel-in-progress: true\". use a group per pull request such as \"${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}\", so that a new push cancels only the older runs of the same pull request and not the runs of the others"
+      "message": "workflow has no \"concurrency:\", so every run of it executes at the same time even when a newer run supersedes the older ones. add a top-level \"concurrency:\" with a \"group:\" and \"cancel-in-progress: true\""
+    },
+    {
+      "file": ".github/workflows/ci.yml",
+      "rule": "unpinned-uses",
+      "fingerprint": "8d7b11f84c9c3c53",
+      "context": "e5eb876bdc6fd64d",
+      "occurrence": 0,
+      "message": "action \"pyrlyn/ci/.github/actions/macos-runner@main\" must be pinned to a full-length commit SHA like \"{owner}/{repo}@{sha}\" because the \"unpinned-uses\" rule is enabled"
     },
     {
       "file": ".github/workflows/ci.yml",
@@ -24,6 +32,38 @@
       "context": "6becc333ac76d326",
       "occurrence": 0,
       "message": "actions/checkout leaves the GITHUB_TOKEN in the git config of the workspace, where a later step such as an artifact upload can publish it. set \"persist-credentials: false\" under \"with:\" unless a later step needs to push"
+    },
+    {
+      "file": ".github/workflows/ci.yml",
+      "rule": "unpinned-uses",
+      "fingerprint": "168e7c78e0012309",
+      "context": "8f14d7d95751e157",
+      "occurrence": 0,
+      "message": "action \"pyrlyn/ci/.github/actions/setup-xcode@main\" must be pinned to a full-length commit SHA like \"{owner}/{repo}@{sha}\" because the \"unpinned-uses\" rule is enabled"
+    },
+    {
+      "file": ".github/workflows/pipeline.yml",
+      "rule": "unpinned-uses",
+      "fingerprint": "19dc0f9c5f536de9",
+      "context": "922004ff6955016b",
+      "occurrence": 0,
+      "message": "action \"pyrlyn/ci/.github/actions/config@main\" must be pinned to a full-length commit SHA like \"{owner}/{repo}@{sha}\" because the \"unpinned-uses\" rule is enabled"
+    },
+    {
+      "file": ".github/workflows/pipeline.yml",
+      "rule": "unpinned-uses",
+      "fingerprint": "10b726717e2a34a0",
+      "context": "abe5e0308a3cc54a",
+      "occurrence": 0,
+      "message": "reusable workflow call \"pyrlyn/ci/.github/workflows/ci.yml@main\" must be pinned to a full-length commit SHA like \"owner/repo/path/to/workflow.yml@{sha}\" because the \"unpinned-uses\" rule is enabled"
+    },
+    {
+      "file": ".github/workflows/sync-docs.yml",
+      "rule": "unpinned-uses",
+      "fingerprint": "e3a12b3b9f2ef7dd",
+      "context": "1b04748f461a8cb9",
+      "occurrence": 0,
+      "message": "reusable workflow call \"pyrlyn/ci/.github/workflows/sync-docs.yml@main\" must be pinned to a full-length commit SHA like \"owner/repo/path/to/workflow.yml@{sha}\" because the \"unpinned-uses\" rule is enabled"
     }
   ]
 }
