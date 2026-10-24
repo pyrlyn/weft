@@ -5,6 +5,7 @@ python = "3.13.15" # runs ptools
 "cargo:cargo-sweep" = "0.8.0" # `mise run sweep`: drops build artifacts unused for 1 day (ptools sweep)
 mold = { version = "2.42.1", os = ["linux"] } # linker, Linux only; opt in with `cargo --config .cargo/mold.toml`
 node = "26.7.0"
+"npm:agent-browser" = "0.39.2" # browser automation CLI for agents: Check rendered Weft UI output and docs in a real browser.
 # The registry backend (aqua) ships the native binary; `npm:pnpm` 12 leaves a placeholder script.
 pnpm = "12.3.4"
 # wasm32: the WebAssembly build of the core for browsers, Deno, Bun and Node.
