@@ -1,5 +1,15 @@
 # Done
 
+### T69.3e. Remove an element
+
+Part of T69 milestone 3, beside T69.3c (apply a patch and the dirty flag). `Editor::remove` deletes one element by id through the same patch path as every other edit.
+
+`Editor::remove` builds one SPEC §7 patch, `[{"op":"remove","id":id}]`, and passes it to `Editor::apply`. A rejection leaves the document unchanged. An accepted remove drops that element, and `dirty` follows the canonical markup until a successful save.
+
+Result: `crates/weft-studio/tests/remove.rs`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 2
+Check: `cargo test -p weft-studio`.
+
 ### T69.3c. Apply a patch and the dirty flag
 
 Part of T69 milestone 3, beside T69.3b (layers and inspect). `Editor` applies a SPEC §7 patch list and records whether the canonical markup changed. Undo is not included: there is no inverse-patch helper and no undo stack.

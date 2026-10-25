@@ -116,6 +116,7 @@ The native shell and the shared surface talk only through the slint-bindings C A
 6. Packaging: signed builds for macOS (arm64 only) and Windows x86_64, with the toolchain rows in `toolchain.md`.
 
 T69.3b is done (`done.md`): `Editor::layers` lists every element in document order by its diagnostic path, and `Editor::inspect` reads that element's props, events and children. The canvas stays open. Applying a patch and the dirty flag are done (T69.3c, done.md).
+Removing an element is done (T69.3e, done.md).
 T69.2a, the first slice of milestone 2, is done (`done.md`): `generate_embedded` prints a screen as a Slint component that does not inherit `Window`, so a later slice can place several screens on one surface. Pan, zoom, selection and keyboard navigation on the Slint surface are still open. Rulers in the canvas model are done (T69.2c).
 
 **Acceptance criteria.**
