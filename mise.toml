@@ -1,18 +1,19 @@
 # Toolchain for weft. `mise install` then `pnpm install`; `moon ci` runs every check.
 [tools]
-python = "3.13.15" # runs ptools
+python = "3.15.1" # runs ptools
 "pipx:git+https://github.com/pyrlyn/tools.git" = "d6eb6452cbb7ec4b350de87194548915c2648c27" # `mise run sweep`, `just cache`, `just swarfr` (ptools, Python; pyrlyn/tools#8, repin to a tag once merged)
 "cargo:cargo-sweep" = "0.8.0" # `mise run sweep`: drops build artifacts unused for 1 day (ptools sweep)
 mold = { version = "2.42.1", os = ["linux"] } # linker, Linux only; opt in with `cargo --config .cargo/mold.toml`
-node = "26.7.0"
+node = "26.12.1"
+"npm:agent-browser" = "0.39.2" # browser automation CLI for agents: Check rendered Weft UI output and docs in a real browser.
 # The registry backend (aqua) ships the native binary; `npm:pnpm` 12 leaves a placeholder script.
-pnpm = "12.3.4"
+pnpm = "12.15.0"
 # wasm32: the WebAssembly build of the core for browsers, Deno, Bun and Node.
 rust = { version = "1.99.0", components = "rustfmt,clippy", targets = "wasm32-unknown-unknown" }
 # No core mise plugin for moon; aqua installs the prebuilt release.
 "aqua:moonrepo/moon" = "2.5.6"
 deno = "2.9.7"
-bun = "1.4.2"
+bun = "1.4.4"
 # Runs the Rust tests; no aqua package, so cargo builds or binstalls it.
 "cargo:cargo-nextest" = "0.9.143"
 "aqua:rustwasm/wasm-pack" = "0.15.0"
@@ -24,7 +25,7 @@ bun = "1.4.2"
 # Linux would fail without this filter (the Pages deploy builds on ubuntu-latest).
 "aqua:yonaskolb/XcodeGen" = { version = "2.46.0", os = ["macos"] }
 # The pipx backend installs Python tools through uv; pinned here so `mise install` works without a global uv.
-uv = "0.12.23"
+uv = "0.13.5"
 # Translate Toolkit: localization file converters and checks (po2json, pofilter, pocount). Not in the mise registry.
 "pipx:translate-toolkit" = "3.20.0"
 # Lints the workflows: the pre-push hook (hk.pkl) and `mise x -- jactionlint`. The local mise registry lacks the short name.
