@@ -1,6 +1,5 @@
 # Done
 
-<<<<<<< HEAD
 ### T69.3d. Insert an element
 
 Part of T69 milestone 3, beside T69.3c (apply a patch and the dirty flag). `Editor::insert` places markup as a child of a parent id. The index is the child position; omitting it appends.
