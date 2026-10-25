@@ -19,8 +19,8 @@ use weft_catalog::{
     find_project, load_project_file, load_tokens, read_project_member, token_types, write_atomic,
 };
 use weft_core::{
-    ApplyOptions, Catalog, Diagnostic, Document, Mode, ParseOptions, apply_patches, parse,
-    parse_json, serialize,
+    ApplyOptions, Catalog, Diagnostic, Document, Mode, ParseOptions, ValidateOptions,
+    apply_patches, parse, parse_json, serialize, validate_document,
 };
 use weft_slint::{GenerateError, GenerateOptions, MAX_SOURCE_LENGTH, generate};
 
@@ -31,6 +31,7 @@ mod layers;
 mod relocate;
 mod remove;
 
+pub use history::Session;
 pub use layers::{Inspection, Layer};
 
 /// The largest file `open` reads: the screen's markup travels inside the generated Slint source,
@@ -204,6 +205,31 @@ impl Editor {
 
     pub(crate) fn document(&self) -> &Document {
         &self.document
+    }
+
+    pub(crate) fn document_clone(&self) -> Document {
+        self.document.clone()
+    }
+
+    /// Replaces the open document and refreshes diagnostics the same way `apply` does
+    /// after a successful patch (lenient mode, this catalog, these token types, the project's actions).
+    /// `dirty` is the caller's decision.
+    pub(crate) fn replace_document(&mut self, document: Document, dirty: bool) {
+        let types = token_types(&self.tokens);
+        self.diagnostics = validate_document(
+            &document,
+            &ValidateOptions {
+                catalog: Some(&self.catalog),
+                mode: Mode::Lenient,
+                tokens: Some(&types),
+                actions: self
+                    .project
+                    .as_ref()
+                    .and_then(|open| open.project.actions.as_deref()),
+            },
+        );
+        self.document = document;
+        self.dirty = dirty;
     }
 
     pub fn state(&self) -> State {

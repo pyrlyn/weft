@@ -120,6 +120,7 @@ Removing an element is done (T69.3e, done.md).
 Binding a prop is done (T69.3g, done.md).
 Moving an element is done (T69.3f, done.md).
 Inserting an element is done (T69.3d, done.md).
+Undo and redo of an applied patch are done (T69.3h, done.md).
 T69.2a, the first slice of milestone 2, is done (`done.md`): `generate_embedded` prints a screen as a Slint component that does not inherit `Window`, so a later slice can place several screens on one surface. Pan, zoom, selection and keyboard navigation on the Slint surface are still open. Rulers in the canvas model are done (T69.2c).
 
 **Acceptance criteria.**
