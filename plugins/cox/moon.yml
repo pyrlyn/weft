@@ -1,4 +1,4 @@
-# The Weft plugin for cox: a Rust WebAssembly module in a Cargo workspace of its own (Cargo.toml).
+# The Weft plugin for the coding agent: a Rust WebAssembly module in a Cargo workspace of its own (Cargo.toml).
 id: 'cox-plugin'
 language: 'rust'
 
