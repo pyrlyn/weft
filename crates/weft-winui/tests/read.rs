@@ -74,6 +74,8 @@ fn without_defaults(node: &mut Node) {
         ("justify", "start"),
         ("variant", "secondary"),
         ("type", "date"),
+        // A field's default type, which `corpus-account` states.
+        ("type", "text"),
     ];
     node.props.retain(|prop, value| {
         !defaults
@@ -207,6 +209,54 @@ fn x_bind_paths_functions_and_modes_are_bindings() {
             "Bindings /screen#s/button#e: `Props.State` on `Button`: without `Mode=OneWay` x:Bind reads the value once; it is read as a live binding\n",
         )
     );
+}
+
+#[test]
+fn a_keyword_member_reads_as_its_weft_name() {
+    let (doc, lost) = read_body(concat!(
+        r#"<ToggleSwitch AutomationProperties.AutomationId="a" Header="A" IsOn="{x:Bind ViewModel.account.public_, Mode=TwoWay}" />"#,
+        r#"<TextBlock AutomationProperties.AutomationId="b" Text="{x:Bind ViewModel.public__, Mode=OneWay}" />"#,
+        r#"<TextBlock AutomationProperties.AutomationId="c" Text="{x:Bind ViewModel.class_[0].event_, Mode=OneWay}" />"#,
+        // Contextual keywords and other names keep their `_`.
+        r#"<TextBlock AutomationProperties.AutomationId="d" Text="{x:Bind ViewModel.value_.publicity_, Mode=OneWay}" />"#,
+        // A bare keyword does not build, but it reads as the name it states.
+        r#"<TextBlock AutomationProperties.AutomationId="e" Text="{x:Bind ViewModel.new, Mode=OneWay}" />"#,
+    ));
+    assert_eq!(
+        doc,
+        concat!(
+            r#"<switch id="a" checked="{$.account.public}" label="A"/>"#,
+            "\n",
+            r#"<text id="b" text="{$.public_}"/>"#,
+            "\n",
+            r#"<text id="c" text="{$.class.0.event}"/>"#,
+            "\n",
+            r#"<text id="d" text="{$.value_.publicity_}"/>"#,
+            "\n",
+            r#"<text id="e" text="{$.new}"/>"#,
+            "\n",
+        )
+    );
+    assert_eq!(lost, "");
+}
+
+#[test]
+fn keyword_members_round_trip() {
+    let (catalog, tokens) = setup();
+    let source = common::screen(common::KEYWORDS_BODY);
+    let doc = common::document(&source, &catalog, &tokens);
+    let generated = weft_winui::generate(&doc, &common::options(&catalog, &tokens, None)).unwrap();
+    let options = ImportOptions {
+        catalog: &catalog,
+        tokens: &tokens,
+    };
+    let exact = weft_winui::import_winui(&generated.xaml, &options).unwrap();
+    assert_eq!(serialize(&exact), serialize(&doc));
+    let result = read(&bare(&generated.xaml), &catalog, &tokens);
+    assert_eq!(losses(&result), "");
+    let mut want = doc.clone();
+    want.weft = result.document.weft.clone();
+    assert_eq!(serialize(&result.document), serialize(&want));
 }
 
 #[test]
@@ -780,6 +830,68 @@ fn a_marked_repeater_is_an_each_and_its_paths_are_relative() {
 }
 
 #[test]
+fn a_choice_or_menu_template_is_an_each_after_its_static_items() {
+    let (doc, lost) = read_body(concat!(
+        r#"<ComboBox AutomationProperties.AutomationId="c" Header="C" weft:Each.Source="{x:Bind ViewModel.sizes, Mode=OneWay}" weft:Each.As="size" weft:Each.At="9">"#,
+        r#"<weft:Each.Template><DataTemplate x:DataType="weft:PSizesItem">"#,
+        r#"<ComboBoxItem AutomationProperties.AutomationId="o" Content="{x:Bind name, Mode=OneWay}" Tag="{x:Bind code, Mode=OneWay}" />"#,
+        r#"</DataTemplate></weft:Each.Template>"#,
+        r#"<ComboBoxItem AutomationProperties.AutomationId="a" Content="A" Tag="a" />"#,
+        r#"</ComboBox>"#,
+        r#"<DropDownButton AutomationProperties.AutomationId="m" Content="M"><DropDownButton.Flyout>"#,
+        r#"<MenuFlyout weft:Each.Source="{x:Bind ViewModel.tools, Mode=OneWay}" weft:Each.Id="t" weft:Each.As="tool" weft:Each.At="1">"#,
+        r#"<weft:Each.Template><DataTemplate x:DataType="weft:PToolsItem">"#,
+        r#"<MenuFlyoutItem AutomationProperties.AutomationId="i" Text="{x:Bind label, Mode=OneWay}" weft:On.Press="{x:Bind WeftRoot.tool_runCommand}" />"#,
+        r#"</DataTemplate></weft:Each.Template>"#,
+        r#"<MenuFlyoutItem AutomationProperties.AutomationId="j" Text="J" />"#,
+        r#"<MenuFlyoutItem AutomationProperties.AutomationId="k" Text="K" />"#,
+        r#"</MenuFlyout></DropDownButton.Flyout></DropDownButton>"#,
+        r#"<DropDownButton AutomationProperties.AutomationId="n" Content="N"><DropDownButton.Flyout>"#,
+        r#"<MenuFlyout weft:Each.Source="{x:Bind weft:Weft.Not(ViewModel.tools), Mode=OneWay}" weft:Each.As="tool">"#,
+        r#"<weft:Each.Template><DataTemplate><MenuFlyoutItem Text="{x:Bind label, Mode=OneWay}" /></DataTemplate></weft:Each.Template>"#,
+        r#"</MenuFlyout></DropDownButton.Flyout></DropDownButton>"#,
+    ));
+    // `At` past the static items puts the repeated ones last.
+    assert_eq!(
+        doc,
+        concat!(
+            r#"<select id="c" label="C">"#,
+            "\n",
+            r#"  <option id="a" value="a">A</option>"#,
+            "\n",
+            r#"  <each id="each-size" as="size" in="{$.sizes}">"#,
+            "\n",
+            r#"    <option id="o" text="{$size.name}" value="{$size.code}"/>"#,
+            "\n",
+            "  </each>\n",
+            "</select>\n",
+            r#"<menu id="m" label="M">"#,
+            "\n",
+            r#"  <menu-item id="j">J</menu-item>"#,
+            "\n",
+            r#"  <each id="t" as="tool" in="{$.tools}">"#,
+            "\n",
+            r#"    <menu-item id="i" text="{$tool.label}" on-press="tool.run"/>"#,
+            "\n",
+            "  </each>\n",
+            r#"  <menu-item id="k">K</menu-item>"#,
+            "\n",
+            "</menu>\n",
+            r#"<menu id="n" label="N"/>"#,
+            "\n",
+        )
+    );
+    // A computed list is no `<each>`, so its template is not read.
+    assert_eq!(
+        lost,
+        concat!(
+            "Ids /screen#s/select#c/each#each-size: an id was generated\n",
+            "Repetition /screen#s/menu#n: an `Each.Template` without `Each.As` and a bound `Each.Source` is not read\n",
+        )
+    );
+}
+
+#[test]
 fn a_user_control_or_window_reads_like_a_page() {
     let (catalog, tokens) = setup();
     let ns = r#"xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation""#;
@@ -811,4 +923,53 @@ fn a_user_control_or_window_reads_like_a_page() {
     for root in ["UserControl", "Window"] {
         assert_eq!(read_as(root), page, "{root}");
     }
+}
+
+#[test]
+fn a_material_border_and_a_3d_transform_read_onto_their_element() {
+    let (doc, lost) = read_body(concat!(
+        r#"<Border Background="{ThemeResource Weft.material.glass}" Padding="{StaticResource Weft.space.sm.thickness}">"#,
+        r#"<StackPanel AutomationProperties.AutomationId="c" /></Border>"#,
+        r#"<Border><Border.Transform3D><PerspectiveTransform3D Depth="600" OffsetX="3" /></Border.Transform3D>"#,
+        r#"<Button AutomationProperties.AutomationId="b" Content="B" weft:Tilt.Centered="True">"#,
+        r#"<Button.Transform3D><CompositeTransform3D RotationZ="10" TranslateX="5" /></Button.Transform3D>"#,
+        r#"</Button></Border>"#,
+    ));
+    assert_eq!(
+        doc,
+        concat!(
+            r#"<stack id="c" material="{token.material.glass}" padding="{token.space.sm}"/>"#,
+            "\n",
+            r#"<button id="b" perspective="600" rotate-z="-10">B</button>"#,
+            "\n",
+        )
+    );
+    assert_eq!(
+        lost,
+        concat!(
+            "Layout /screen#s/button#b: `TranslateX` of a `CompositeTransform3D` has no Weft form\n",
+            "Layout /screen#s/button#b: `OffsetX` of a `PerspectiveTransform3D` has no Weft form\n",
+        )
+    );
+}
+
+#[test]
+fn a_pages_own_weft_tokens_are_not_read_and_other_resources_are_lost() {
+    let (catalog, tokens) = setup();
+    let page = |resources: &str| {
+        let xaml = format!(
+            r#"<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"><Page.Resources><ResourceDictionary>{resources}</ResourceDictionary></Page.Resources><StackPanel AutomationProperties.AutomationId="s" /></Page>"#
+        );
+        losses(&read(&xaml, &catalog, &tokens))
+    };
+    let own = page(concat!(
+        r#"<ResourceDictionary.ThemeDictionaries><ResourceDictionary x:Key="Light">"#,
+        r##"<SolidColorBrush x:Key="Weft.color.ink" Color="#FF000000" />"##,
+        r#"</ResourceDictionary></ResourceDictionary.ThemeDictionaries>"#,
+        r#"<x:Double x:Key="Weft.space.md">16</x:Double>"#,
+    ));
+    assert_eq!(own, "");
+    let other =
+        page(r#"<x:Double x:Key="Weft.space.md">16</x:Double><x:Double x:Key="Gap">4</x:Double>"#);
+    assert_eq!(other, "Props /screen#s: `Page.Resources` is not read\n");
 }

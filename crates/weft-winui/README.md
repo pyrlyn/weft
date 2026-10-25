@@ -28,7 +28,7 @@ $ weft import-winui windows/LoginPage.xaml > login.weft
 As a library:
 
 ```rust
-let page = weft_winui::generate(&document, &GenerateOptions { catalog: &catalog, tokens: &tokens, name: None, namespace: "WeftScreens" })?;
+let page = weft_winui::generate(&document, &GenerateOptions { catalog: &catalog, tokens: &tokens, name: None, namespace: "WeftScreens", shared_tokens: true, appearance: None })?;
 let weft_cs = weft_winui::helpers("WeftScreens")?;
 let (weft_tokens, skipped) = weft_winui::generate_tokens(&tokens);
 let document = weft_winui::import_winui(&page.xaml, &ImportOptions { catalog: &catalog, tokens: &tokens })?;
@@ -44,8 +44,8 @@ The crate is pure Rust (XML through `roxmltree`) and builds for WebAssembly. The
 | `<Name>Page.xaml` | The source comment (`<!-- weft:source winui name=… namespace=…` and the escaped markup), then a `Page` holding a `ScrollViewer` and the screen's `StackPanel`. Ids are `AutomationProperties.AutomationId`. |
 | `<Name>Page.xaml.cs` | The page class: `ViewModel` and the constructor. |
 | `<Name>ViewModel.cs` | Plain C# with `INotifyPropertyChanged`: one property per data path, a class per object and list item, an `ICommand` per action, and `Perform`, which raises `Performed` with a `WeftEvent(Action, Id, Item)`. |
-| `Weft.cs` | Written once per namespace: the binding and converter functions, the inert `Props` markers, the `On` events, `Choice.Value`, `Dialog.IsOpen`, the `Each` and `Slot` markers and `ColumnsPanel`. No NuGet package beyond the Windows App SDK. |
-| `WeftTokens.xaml` | A `ResourceDictionary` of the dimension tokens (`x:Double`, and `Thickness` for padding), merged into `App.xaml`. |
+| `Weft.cs` | Written once per namespace: the binding and converter functions, the inert `Props` markers, the `On` events, `Choice.Value`, `Dialog.IsOpen`, the `Each` and `Slot` markers, `Tilt.Centered`, `ColumnsPanel` and `ColumnsLayout`. No NuGet package beyond the Windows App SDK. |
+| `WeftTokens.xaml` | A `ResourceDictionary` merged into `App.xaml`: the dimension tokens (`x:Double`, and `Thickness` for padding), and the colours and materials (`SolidColorBrush`, `AcrylicBrush`) in `Light`, `Dark` and `HighContrast` theme dictionaries. With `shared_tokens: false` a page holds the tokens it uses in its own `Page.Resources` instead. |
 
 ## Mapping
 
@@ -55,7 +55,7 @@ SPEC §9 "To WinUI" is the full mapping and `docs/winui-design.md` the design be
 | --- | --- |
 | `screen`, `form`, `section` | `StackPanel` with a landmark; a section is drawn as a card |
 | `stack` | `StackPanel`, or a `Grid` of `Auto` and star tracks when `justify` leaves free space or a child has `grow` |
-| `grid` | `Grid` of star columns, or `weft:ColumnsPanel` with `min-column-width` |
+| `grid` | `Grid` of star columns, or `weft:ColumnsPanel` with `min-column-width`; an `ItemsRepeater` with a `weft:ColumnsLayout` when its only child is an `<each>` |
 | `text`, `heading` | `TextBlock`, a heading with its type-ramp style and `HeadingLevel` |
 | `button`, `link` | `Button`, `HyperlinkButton` |
 | `field`, `checkbox`, `switch` | `TextBox` or `PasswordBox`, `CheckBox`, `ToggleSwitch` |
@@ -63,12 +63,14 @@ SPEC §9 "To WinUI" is the full mapping and `docs/winui-design.md` the design be
 | `slider`, `stepper`, `date-picker`, `color-picker` | `Slider`, `NumberBox`, `CalendarDatePicker`/`TimePicker`, a `ColorPicker` flyout |
 | `list`, `table`, `tabs`, `dialog`, `menu`, `alert` | `ListView`, panels marked as a table, `TabView`, `ContentDialog`, `DropDownButton`, `InfoBar` |
 | `<each>` | `ItemsRepeater` with a typed `DataTemplate`, or a `ListView`'s `ItemsSource` |
+| `material` | A `Border` with the token's `AcrylicBrush` around the stack or grid |
+| `rotate-x`, `rotate-y`, `rotate-z`, `perspective` | A `CompositeTransform3D` centred by `weft:Tilt.Centered`, under a `Border` with a `PerspectiveTransform3D` |
 
 Data paths are view-model properties, actions are commands, and what WinUI does not draw is an inert `weft:Props.<Prop>` marker the reader gives back.
 
 ## Hand-written XAML
 
-`read_winui` parses XAML as XML and never compiles or runs it: a DTD is refused and the size, node count and depth are bounded. Each control becomes the kind the mapping writes for it, `{x:Bind}` paths become bindings, `weft:On.*` and command names become actions, `Weft.…` resources become tokens, and `Grid` tracks become `justify` and `grow`. What has no Weft form is a loss with its XAML path (SPEC §9, "From WinUI"), never a silent drop.
+`read_winui` parses XAML as XML and never compiles or runs it: a DTD is refused and the size, node count and depth are bounded. Each control becomes the kind the mapping writes for it, `{x:Bind}` paths become bindings, `weft:On.*` and command names become actions, `Weft.…` resources become tokens, a material `Border` and 3D transforms become `material` and the tilt, and `Grid` tracks become `justify` and `grow`. What has no Weft form is a loss with its XAML path (SPEC §9, "From WinUI"), never a silent drop.
 
 ## Tests
 

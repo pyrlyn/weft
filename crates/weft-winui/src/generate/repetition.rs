@@ -1,5 +1,7 @@
 //! Repetition (SPEC §9, "To WinUI"): an `<each>` as an `ItemsRepeater` whose template is typed by
-//! the generated item class, a `list` of one `<each>` as a `ListView` bound to the list, and the
+//! the generated item class, in its parent's flow or in a grid's columns, a `list` of one `<each>`
+//! as a `ListView` bound to the list, an `<each>` among a choice's options or a menu's items as the
+//! `Each` helper's template, and the
 //! `empty` slots of `list` and `table`.
 
 use weft_core::{Node, Value};
@@ -18,7 +20,7 @@ impl Gen<'_> {
             return self.node(node);
         }
         let Some(parent) = parent.filter(|p| p.name == "StackPanel") else {
-            // A grid's tracks, a row's cells, tabs, menus and choices cannot hold a repeater.
+            // A grid's tracks, a row's cells, tabs and radio choices cannot hold a repeater.
             self.later(node, "an `<each>` here");
             return None;
         };
@@ -50,6 +52,67 @@ impl Gen<'_> {
             .push(holder("ItemsRepeater.ItemTemplate", template(&class, root)));
         self.data.leave();
         Some(e)
+    }
+
+    /// A grid's only `<each>` as the `ItemsRepeater` `e`, which `layout` places in columns. Each
+    /// item is one cell, so it is one element.
+    pub(super) fn repeat(&mut self, e: &mut Element, each: &Node, layout: Element) {
+        e.name = "ItemsRepeater".into();
+        let items: Vec<&Node> = nodes(&each.children).collect();
+        let [item] = items[..] else {
+            return self.later(each, "an `<each>` of other than one element in a grid");
+        };
+        let Some((source, class)) = self.enter(each) else {
+            return;
+        };
+        e.attr("ItemsSource", source);
+        markers(e, each);
+        e.children.push(holder("ItemsRepeater.Layout", layout));
+        if let Some(root) = self.node(item) {
+            e.children
+                .push(holder("ItemsRepeater.ItemTemplate", template(&class, root)));
+        }
+        self.data.leave();
+    }
+
+    /// The options of a choice or the items of a menu. A `ComboBox` takes either items or an
+    /// `ItemsSource` and a `MenuFlyout` has no `ItemsSource`, so one `<each>` of one item among
+    /// them is a typed template on `e` that `Each` loads per item, after the `At` static ones.
+    pub(super) fn items(&mut self, e: &mut Element, node: &Node) {
+        let item = if node.kind == "menu" {
+            "menu-item"
+        } else {
+            "option"
+        };
+        let mut repeated = None;
+        for n in nodes(&node.children) {
+            if n.kind != "each" {
+                e.children.extend(self.node(n));
+                continue;
+            }
+            let items: Vec<&Node> = nodes(&n.children).collect();
+            if repeated.is_some() || !matches!(items[..], [i] if i.kind == item) {
+                let what = format!("an `<each>` beside another, or of anything but one `{item}`,");
+                self.later(n, &what);
+                continue;
+            }
+            let Some((source, class)) = self.enter(n) else {
+                continue;
+            };
+            e.attr("weft:Each.Source", source);
+            markers(e, n);
+            if !e.children.is_empty() {
+                e.attr("weft:Each.At", e.children.len().to_string());
+            }
+            if let Some(root) = self.node(items[0]) {
+                repeated = Some(holder("weft:Each.Template", template(&class, root)));
+            }
+            self.data.leave();
+        }
+        // A property element goes before the content, which XAML keeps in one run.
+        if let Some(t) = repeated {
+            e.children.insert(0, t);
+        }
     }
 
     /// The `ItemsSource` binding and the item class of an `<each>`, whose loop the generator is
@@ -88,7 +151,7 @@ impl Gen<'_> {
             e.attr("ItemsSource", source);
             markers(e, each);
             if let Some(mut root) = self.node(items[0]) {
-                root.name = "ContentControl";
+                root.name = "ContentControl".into();
                 root.attr("AutomationProperties.LocalizedControlType", "list item");
                 e.children
                     .push(holder("ListView.ItemTemplate", template(&class, root)));
@@ -177,7 +240,7 @@ fn template(class: &str, root: Element) -> Element {
 }
 
 /// A property element holding `child`.
-fn holder(name: &'static str, child: Element) -> Element {
+pub(super) fn holder(name: impl Into<std::borrow::Cow<'static, str>>, child: Element) -> Element {
     let mut e = Element::new(name);
     e.children.push(child);
     e

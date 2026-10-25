@@ -2,7 +2,9 @@
 // Write it once per project; generating it again overwrites any edit.
 #nullable enable
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Input;
@@ -14,6 +16,7 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.UI.Xaml.Media.Media3D;
 using Windows.System;
 using WinColor = Windows.UI.Color;
 
@@ -238,24 +241,65 @@ public sealed class ColumnsPanel : Panel
         DependencyProperty.Register(name, type, typeof(ColumnsPanel),
             new PropertyMetadata(value, (o, _) => ((ColumnsPanel)o).InvalidateMeasure()));
 
+    readonly ColumnGrid grid = new();
+
+    protected override Windows.Foundation.Size MeasureOverride(Windows.Foundation.Size available) =>
+        grid.Measure(Children, available, Columns, MinColumnWidth, Spacing, Padding);
+
+    protected override Windows.Foundation.Size ArrangeOverride(Windows.Foundation.Size final) =>
+        grid.Arrange(Children, final, Spacing, Padding);
+}
+
+/// <summary>The <c>ColumnsPanel</c> of an <c>ItemsRepeater</c>: a <c>grid</c> with
+/// <c>min-column-width</c> whose only child is an <c>&lt;each&gt;</c> (SPEC §9, To WinUI). A
+/// repeater takes a layout, not a panel, and has no padding, so the layout holds it.</summary>
+public sealed class ColumnsLayout : NonVirtualizingLayout
+{
+    public static readonly DependencyProperty ColumnsProperty = Layout(nameof(Columns), typeof(int), 1);
+    public static readonly DependencyProperty MinColumnWidthProperty = Layout(nameof(MinColumnWidth), typeof(double), 0.0);
+    public static readonly DependencyProperty SpacingProperty = Layout(nameof(Spacing), typeof(double), 0.0);
+    public static readonly DependencyProperty PaddingProperty = Layout(nameof(Padding), typeof(Thickness), new Thickness(0));
+
+    public int Columns { get => (int)GetValue(ColumnsProperty); set => SetValue(ColumnsProperty, value); }
+    public double MinColumnWidth { get => (double)GetValue(MinColumnWidthProperty); set => SetValue(MinColumnWidthProperty, value); }
+    public double Spacing { get => (double)GetValue(SpacingProperty); set => SetValue(SpacingProperty, value); }
+    public Thickness Padding { get => (Thickness)GetValue(PaddingProperty); set => SetValue(PaddingProperty, value); }
+
+    static DependencyProperty Layout(string name, Type type, object value) =>
+        DependencyProperty.Register(name, type, typeof(ColumnsLayout),
+            new PropertyMetadata(value, (o, _) => ((ColumnsLayout)o).InvalidateMeasure()));
+
+    readonly ColumnGrid grid = new();
+
+    protected override Windows.Foundation.Size MeasureOverride(NonVirtualizingLayoutContext context, Windows.Foundation.Size available) =>
+        grid.Measure(context.Children, available, Columns, MinColumnWidth, Spacing, Padding);
+
+    protected override Windows.Foundation.Size ArrangeOverride(NonVirtualizingLayoutContext context, Windows.Foundation.Size final) =>
+        grid.Arrange(context.Children, final, Spacing, Padding);
+}
+
+/// <summary>The measuring of <c>ColumnsPanel</c> and <c>ColumnsLayout</c>, which differ only in
+/// where their children come from. Arrange uses the column width the last measure found.</summary>
+sealed class ColumnGrid
+{
     double width;
     int count = 1;
 
-    protected override Windows.Foundation.Size MeasureOverride(Windows.Foundation.Size available)
+    public Windows.Foundation.Size Measure(IEnumerable<UIElement> children, Windows.Foundation.Size available,
+        int columns, double minColumnWidth, double spacing, Thickness p)
     {
-        var p = Padding;
         var inner = available.Width - p.Left - p.Right;
-        var most = Math.Max(1, Columns);
+        var most = Math.Max(1, columns);
         // Unbounded width, as in a horizontal scroller, has room for every column.
         count = double.IsInfinity(inner)
             ? most
-            : Math.Clamp((int)((inner + Spacing) / (MinColumnWidth + Spacing)), 1, most);
+            : Math.Clamp((int)((inner + spacing) / (minColumnWidth + spacing)), 1, most);
         width = double.IsInfinity(inner)
-            ? MinColumnWidth
-            : Math.Max(0, (inner - Spacing * (count - 1)) / count);
+            ? minColumnWidth
+            : Math.Max(0, (inner - spacing * (count - 1)) / count);
         var height = 0.0;
         var widest = 0.0;
-        foreach (var row in Rows())
+        foreach (var row in Rows(children))
         {
             var tallest = 0.0;
             foreach (var child in row)
@@ -264,31 +308,58 @@ public sealed class ColumnsPanel : Panel
                 tallest = Math.Max(tallest, child.DesiredSize.Height);
                 widest = Math.Max(widest, child.DesiredSize.Width);
             }
-            height += tallest + (height > 0 ? Spacing : 0);
+            height += tallest + (height > 0 ? spacing : 0);
         }
-        var across = double.IsInfinity(inner) ? count * widest + Spacing * (count - 1) : inner;
+        var across = double.IsInfinity(inner) ? count * widest + spacing * (count - 1) : inner;
         return new Windows.Foundation.Size(across + p.Left + p.Right, height + p.Top + p.Bottom);
     }
 
-    protected override Windows.Foundation.Size ArrangeOverride(Windows.Foundation.Size final)
+    public Windows.Foundation.Size Arrange(IEnumerable<UIElement> children, Windows.Foundation.Size final,
+        double spacing, Thickness p)
     {
-        var p = Padding;
         var y = p.Top;
-        foreach (var row in Rows())
+        foreach (var row in Rows(children))
         {
             var tallest = row.Max(c => c.DesiredSize.Height);
             for (var i = 0; i < row.Count; i++)
             {
-                var x = p.Left + i * (width + Spacing);
+                var x = p.Left + i * (width + spacing);
                 row[i].Arrange(new Windows.Foundation.Rect(x, y, width, tallest));
             }
-            y += tallest + Spacing;
+            y += tallest + spacing;
         }
         return final;
     }
 
-    IEnumerable<List<UIElement>> Rows() =>
-        Children.Select((c, i) => (c, i)).GroupBy(t => t.i / count, t => t.c).Select(g => g.ToList());
+    IEnumerable<List<UIElement>> Rows(IEnumerable<UIElement> children) =>
+        children.Select((c, i) => (c, i)).GroupBy(t => t.i / count, t => t.c).Select(g => g.ToList());
+}
+
+/// <summary>The centre of an element's 3D tilt (SPEC §9, To WinUI): a Weft tilt turns about the
+/// element's middle, and a <c>CompositeTransform3D</c> takes its centre in pixels, so this keeps
+/// it at half the element's size whenever the size changes.</summary>
+public static class Tilt
+{
+    public static readonly DependencyProperty CenteredProperty = DependencyProperty.RegisterAttached(
+        "Centered", typeof(bool), typeof(Tilt), new PropertyMetadata(false, Changed));
+
+    public static bool GetCentered(DependencyObject o) => (bool)o.GetValue(CenteredProperty);
+    public static void SetCentered(DependencyObject o, bool value) => o.SetValue(CenteredProperty, value);
+
+    private static void Changed(DependencyObject o, DependencyPropertyChangedEventArgs e)
+    {
+        if (o is FrameworkElement element && e.NewValue is true && e.OldValue is not true)
+        {
+            element.SizeChanged += (_, size) =>
+            {
+                if (element.Transform3D is CompositeTransform3D turn && GetCentered(element))
+                {
+                    turn.CenterX = size.NewSize.Width / 2;
+                    turn.CenterY = size.NewSize.Height / 2;
+                }
+            };
+        }
+    }
 }
 
 /// <summary>The text value of a control whose own property holds something else (SPEC §9, To
@@ -381,6 +452,15 @@ public static class Choice
         }
     }
 
+    // Shows a value set before the items it names were there.
+    internal static void Reshow(FrameworkElement element)
+    {
+        if (GetValue(element) is not null)
+        {
+            Show(element);
+        }
+    }
+
     private static object? Tagged(IEnumerable<object> items, string value) =>
         items.FirstOrDefault(i => (i as FrameworkElement)?.Tag?.ToString() == value);
 
@@ -469,17 +549,101 @@ public static class Slot
     public static void SetName(DependencyObject o, object? value) => o.SetValue(NameProperty, value);
 }
 
-/// <summary>An <c>&lt;each&gt;</c>'s id and loop variable on the repeater or list that draws it;
-/// only the importer reads them.</summary>
+/// <summary>An <c>&lt;each&gt;</c>'s id and loop variable on the element that draws it, which only
+/// the importer reads; and an <c>&lt;each&gt;</c> among the options of a <c>ComboBox</c> or the
+/// items of a <c>MenuFlyout</c>, neither of which can bind the list itself: <c>Template</c> is
+/// loaded once per item of <c>Source</c>, with the item as its <c>DataContext</c>, and inserted
+/// after the first <c>At</c> static items.</summary>
 public static class Each
 {
     public static readonly DependencyProperty IdProperty = Weft.Marker("Id", typeof(Each));
     public static readonly DependencyProperty AsProperty = Weft.Marker("As", typeof(Each));
+    public static readonly DependencyProperty SourceProperty = Repeat("Source", typeof(object), null);
+    public static readonly DependencyProperty TemplateProperty = Repeat("Template", typeof(DataTemplate), null);
+    public static readonly DependencyProperty AtProperty = Repeat("At", typeof(int), 0);
+
+    // The elements the last fill inserted, which the next one removes.
+    private static readonly DependencyProperty MadeProperty =
+        DependencyProperty.RegisterAttached("Made", typeof(object), typeof(Each), new PropertyMetadata(null));
+
+    // The handler that refills on a change of the list, kept to unhook it when the list is replaced.
+    private static readonly DependencyProperty WatchProperty =
+        DependencyProperty.RegisterAttached("Watch", typeof(object), typeof(Each), new PropertyMetadata(null));
 
     public static object? GetId(DependencyObject o) => o.GetValue(IdProperty);
     public static void SetId(DependencyObject o, object? value) => o.SetValue(IdProperty, value);
     public static object? GetAs(DependencyObject o) => o.GetValue(AsProperty);
     public static void SetAs(DependencyObject o, object? value) => o.SetValue(AsProperty, value);
+    public static object? GetSource(DependencyObject o) => o.GetValue(SourceProperty);
+    public static void SetSource(DependencyObject o, object? value) => o.SetValue(SourceProperty, value);
+    public static DataTemplate? GetTemplate(DependencyObject o) => (DataTemplate?)o.GetValue(TemplateProperty);
+    public static void SetTemplate(DependencyObject o, DataTemplate? value) => o.SetValue(TemplateProperty, value);
+    public static int GetAt(DependencyObject o) => (int)o.GetValue(AtProperty);
+    public static void SetAt(DependencyObject o, int value) => o.SetValue(AtProperty, value);
+
+    private static DependencyProperty Repeat(string name, Type type, object? fallback) =>
+        DependencyProperty.RegisterAttached(name, type, typeof(Each), new PropertyMetadata(fallback, Changed));
+
+    private static void Changed(DependencyObject o, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.Property == SourceProperty)
+        {
+            if (e.OldValue is INotifyCollectionChanged old && o.GetValue(WatchProperty) is NotifyCollectionChangedEventHandler watch)
+            {
+                old.CollectionChanged -= watch;
+            }
+            if (e.NewValue is INotifyCollectionChanged list)
+            {
+                NotifyCollectionChangedEventHandler refill = (_, _) => Fill(o);
+                o.SetValue(WatchProperty, refill);
+                list.CollectionChanged += refill;
+            }
+        }
+        Fill(o);
+    }
+
+    private static void Fill(DependencyObject o)
+    {
+        switch (o)
+        {
+            case ItemsControl control:
+                Fill(control, control.Items);
+                // The value may name an item that was not there when it was shown.
+                Choice.Reshow(control);
+                break;
+            case MenuFlyout menu:
+                Fill(menu, menu.Items);
+                break;
+        }
+    }
+
+    private static void Fill<T>(DependencyObject o, IList<T> items) where T : class
+    {
+        if (o.GetValue(MadeProperty) is List<T> made)
+        {
+            foreach (var element in made)
+            {
+                items.Remove(element);
+            }
+        }
+        var now = new List<T>();
+        o.SetValue(MadeProperty, now);
+        if (GetTemplate(o) is not { } template || GetSource(o) is not IEnumerable list)
+        {
+            return;
+        }
+        var at = Math.Clamp(GetAt(o), 0, items.Count);
+        foreach (var item in list)
+        {
+            // A template's compiled bindings read the item from its root's DataContext.
+            if (template.LoadContent() is FrameworkElement root and T element)
+            {
+                root.DataContext = item;
+                items.Insert(at + now.Count, element);
+                now.Add(element);
+            }
+        }
+    }
 }
 
 /// <summary>A dialog's <c>open</c>, two-way: true shows the dialog, false hides it, and a

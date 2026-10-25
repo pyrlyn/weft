@@ -1,5 +1,24 @@
 # Done
 
+### T69.2b. Canvas model
+
+Part of T69 milestone 2, beside T69.2a (the embedded Slint component). The document core holds one screen. The canvas holds several, with a view and a selection, and still saves each screen as canonical markup. Done when frames, pan, zoom, frame hit-testing, element selection and keyboard movement are covered without a Slint crate.
+
+`Canvas` in `crates/weft-studio` opens a `.weft` file as a frame of 390 by 800 to the right of the frames already open (80 px between them). A refused open adds nothing. Frame positions are session state: `move_frame` changes the origin, and a save still writes only the screen. Screen space is `canvas * zoom + pan`. `zoom_at` keeps the canvas point under the cursor and clamps the zoom to 0.1 and 8. `frame_at` hits the frontmost frame and misses the gap. `select` and `hover_at` name an element by its diagnostic path. `focus` walks that tree in document order, across frames, and steps over a `slot` because a slot is not an element. A point does not pick an element: that needs the Slint layout, which this crate does not link.
+
+Result: `crates/weft-studio/tests/canvas.rs`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 3
+Check: `cargo test -p weft-studio`.
+### T105. Weft to WinUI 3 and back
+
+Convert a Weft screen into a WinUI 3 page for a Windows App SDK app, and read WinUI XAML back into Weft, as T67 does for Slint and T34 for SwiftUI. The design is `docs/winui-design.md`; the external facts, with sources, are `research.md` §23. The creator approved the design and every open question there before T105.1.
+
+Done when every sub-task is done: every corpus screen and catalog example generates, its golden files build in the Windows job, `import_winui(generate(x)) == x` for each, `read_winui` reads the generated XAML without its source comment with only the losses SPEC §9 lists, and SPEC §9, §10.6, AGENT-SPEC and the crate README describe the target.
+
+Result: T105.1 through T105.18 are done (their cards in this file). `PENDING` in `crates/weft-winui/tests/common/mod.rs` is empty, so every corpus screen and catalog example generates and has goldens. `generated_xaml_reads_back_to_the_same_document` checks `import_winui(generate(x)) == x`, and `generated_pages_read_back_without_their_comment` checks the XAML read with the source comment removed. SPEC §9 (To WinUI, From WinUI, the loss table), §10.6, AGENT-SPEC and `crates/weft-winui/README.md` describe the target. The `winui` job builds those goldens. Screenshots of the pages stay a later task, as the design left them.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 5
+Check: the sub-tasks' checks; `PENDING` is empty.
+
 ### T16.3. Layout vocabulary: web generators and the reference renderer
 
 T16 scope items 3 and 5 for the web, as the design's generate table says. Depends on T16.2.
@@ -1576,6 +1595,14 @@ Result: https://github.com/pyrlyn/weft/pull/104. Ten more screens generate (`cor
 
 Result: https://github.com/pyrlyn/weft/pull/108. Eight more screens generate (`corpus-data-table`, `corpus-leaderboard`, `corpus-orders`, `corpus-search-results`, `corpus-tabs`, `corpus-todo-list`, `example-list`, `example-table`), with a `repetition` fixture of nested loops, `WeftParent` and bound empty slots, and they read back from the XAML alone without losses.
 
+### T105.16. WinUI repeats inside select, combobox and menu
+
+Found when T105.10 closed: an `<each>` inside `select`, `combobox` or `menu` does not generate, so `corpus-booking`, `example-menu-item` and `example-option` stay in `PENDING` (`crates/weft-winui/tests/common/mod.rs`). Generate the repeated options or menu items from the bound collection (an `ItemsSource` with a typed template, or the pattern T105.14 uses for repetition), read them back, and add the SPEC §9 and `docs/winui-design.md` rows. The creator approved this task. Done when the three screens leave `PENDING`, their goldens build in the Windows job, and they round-trip.
+
+**Execution plan.** A `ComboBox` takes either `Items` or an `ItemsSource` (`example-option` mixes an `<each>` with a static option), and a `MenuFlyout` has only `Items`, so neither can bind the list itself. (1) SPEC §9 To and From WinUI, `docs/winui-design.md` and `research.md` §23 rows first, with sources. (2) `Weft.cs`: `Each.Source`, `Each.Template` and `Each.At` on a `ComboBox` or `MenuFlyout`: the helper loads the typed `DataTemplate` once per item of the list, sets the item as the element's `DataContext` (compiled template bindings follow the root's `DataContextChanged`), inserts it after the `At` static items, refills when the list changes, and shows the choice's value again. (3) Generator (`generate/repetition.rs`, `generate/controls.rs`): an `<each>` of one `option` or `menu-item` among a choice's options or a menu's items writes those properties, its markers and the template; a second `<each>` or one of other children stays refused. (4) Reader: a `ComboBox` or `MenuFlyout` with `Each.As` and a bound `Each.Source` reads the template's item back as an `<each>` at `At`. (5) Tests: goldens for `corpus-booking`, `example-menu-item`, `example-option` (PENDING shrinks), refusals, a reader test; `moon run root:changed`, the full check, then the Windows `winui` job.
+
+Result: https://github.com/pyrlyn/weft/pull/119. `corpus-booking`, `example-menu-item` and `example-option` generate, match goldens and read back from the XAML alone without losses; the `repetition` fixture adds a select and a menu with static items before the `<each>` (`Each.At="1"`).
+
 ### T105.13. WinUI date and colour pickers
 
 Split from T105.3 to keep it under 500 lines of code. `date-picker` (`CalendarDatePicker`, `TimePicker`, and a horizontal `StackPanel` of both for `datetime`) and `color-picker` (a `DropDownButton` swatch whose `Flyout` holds a `ColorPicker` without alpha), with `Choice.Value` cases for them, the converter functions `Weft.Day/DayText/Clock/ClockText/Color/Hex/Swatch/Earliest/Latest`, the `Props.Min`/`Props.Max` markers, the SPEC §9 and `docs/winui-design.md` rows, and the hand-written reader reading the `datetime` row and the colour button back. The pre-split implementation, with goldens, tests and the reader cases, is commit `e47549f6` on branch `claude/t105-13-winui-date-colour`: rebase it onto `main` after T105.3 and keep only these parts. About 230 lines of code. Done when `example-date-picker` and `example-color-picker` join the covered screens, the `values` fixture has the pickers back, and their goldens match and read back.
@@ -1596,6 +1623,36 @@ Result: https://github.com/pyrlyn/weft/pull/109. `example-date-picker` and `exam
 **Execution plan.** (1) SPEC §9 "To WinUI" and `docs/winui-design.md`: the stack as a `Grid` for `justify` and `grow`, each child's cross-axis alignment for `align` (a row's default `Center` written out), `Padding` from the token's `.thickness` resource, `MaxWidth`, and `weft:ColumnsPanel` for `min-column-width`. (2) `src/tokens.rs`: a `Thickness` beside each dimension in `WeftTokens.xaml`. (3) `src/generate.rs` (or a new `generate/layout.rs`): the stack's element, tracks and child placement, `align`, `padding` and `max-width` on `stack` and `grid`, `min-column-width` as a `ColumnsPanel` with `Columns`, `MinColumnWidth` and `Spacing`; an `<each>` in a stack drawn as a `Grid` stays refused. (4) `src/Weft.cs`: `ColumnsPanel`, a panel showing `Columns` columns while each is at least `MinColumnWidth` wide, fewer down to one below that, children in order. (5) Reader: `ColumnsPanel` reads back as a `grid` with `columns` and `min-column-width`. (6) Tests: goldens (row stacks gain `VerticalAlignment="Center"`), a `layout` fixture (every `justify`, `grow`, `align`, `padding`, `max-width`, `min-column-width`), refusals, reader tests; `cargo test -p weft-winui --all-features`, then the Windows job.
 
 Result: https://github.com/pyrlyn/weft/pull/112. Seven more screens generate (`corpus-appearance` together with the T105.13 pickers, `corpus-dashboard`, `corpus-inbox`, `corpus-layout`, `corpus-receipt`, `example-grid`, `example-stack`), with a `layout` fixture of every `justify`, `grow`, `align`, `padding`, `max-width` and `min-column-width` case, and they read back from the XAML alone without losses. A `justify` that draws nothing is the `weft:Props.Justify` marker; `ColumnsPanel` is in `Weft.cs`.
+
+### T105.15. WinUI colour tokens, materials and tilt
+
+Split from T105.5. `WeftTokens.xaml` beyond the dimensions (colours with `ThemeDictionaries` for light, dark and high contrast), `material` as an `AcrylicBrush` on a `Border` (with `padding` inside it), and the 3D tilt (`perspective`, `rotate-x`, `rotate-y`, `rotate-z`). Checks the unverified resource-key and perspective facts in the Windows build. Done when the `glass`, `tilt` and `showroom` corpus screens generate, build and read back. Per-page tokens and `weft:ColumnsLayout` were split off into T105.18 when this task was claimed, since the whole card was over the 500-line budget.
+
+**Execution plan.**
+
+1. Spec first: SPEC §9 "To WinUI" and "From WinUI" (colour and material resources, the material `Border`, the tilt `Border` and `Transform3D`, `weft:Tilt.Centered`), `docs/winui-design.md` § Tokens and the tilt row, `research.md` §23 rows for the facts checked (perspective on a parent, rotation sense, theme dictionary keys).
+2. `crates/weft-catalog`: one sRGB channel reader for DTCG colours (`#rgb`…`#rrggbbaa` and `srgb` components), reused by `weft-swiftui` instead of its own hex parser and by `weft-winui`.
+3. `crates/weft-winui/src/tokens.rs`: colours as `Color` and `SolidColorBrush`, materials as `AcrylicBrush` (tint, opacity, fallback), in `Light`, `Dark` (from the appearance when the project has one) and `HighContrast` dictionaries; `weft winui-tokens` passes the appearance.
+4. Generator: `material` wraps the stack or grid in a `Border` with `Background="{ThemeResource Weft.<path>}"` holding its `Padding` and `MaxWidth`; the tilt is a `CompositeTransform3D` on the element (or its material `Border`) with `weft:Tilt.Centered`, under a `Border` with a `PerspectiveTransform3D` when `perspective` is set; layout attributes and `Visibility` go on the outermost wrapper. `Tilt` helper in `Weft.cs`.
+5. Reader: those `Border`s and `Transform3D` property elements read back into `material`, `padding`, `max-width`, `hidden`, `perspective` and the rotations.
+6. Tests: golden files for `glass`, `tilt`, `showroom` (out of `PENDING`), generator unit tests, round trips both ways, tokens golden; `moon run root:changed`, then the full check; the `winui` CI job builds the goldens.
+
+Result: https://github.com/pyrlyn/weft/pull/120. `corpus-glass`, `corpus-tilt` and `corpus-showroom` generate, match their goldens, build in the Windows `winui` job and read back from the XAML alone without losses. `WeftTokens.xaml` writes colours and materials in `Light`, `Dark` and `HighContrast` theme dictionaries; `weft-catalog` has one sRGB channel reader that `weft-swiftui` now shares. A tilt on a `screen` or on an item a control holds itself is refused for now.
+
+### T105.18. WinUI per-page tokens and reflowing repeats
+
+Split from T105.15 when it was claimed. Per-page tokens with `export.winui.sharedTokens` and `--shared-tokens`/`--no-shared-tokens` (a key ships with its behaviour: SPEC §10.6 row, `crates/weft-catalog/src/settings.rs`, regenerated `schemas/weft.schema.json`): with `false` the page's `Page.Resources` holds only the tokens it uses, and `import_winui` compares those entries by key and type. And `weft:ColumnsLayout` in `Weft.cs` for an `<each>` in a grid with `min-column-width`, generated and read back. Done when both are generated, read back, covered by tests and built in the Windows job.
+
+**Execution plan.**
+
+1. Spec first: SPEC §9 "To WinUI"/"From WinUI" (per-page `Page.Resources`, `ColumnsLayout`, the key-and-type comparison) and the §10.6 row of `export.winui.sharedTokens`; `docs/winui-design.md`; `research.md` §23 on `NonVirtualizingLayout` and page resources, with Microsoft docs URLs and dates.
+2. `crates/weft-winui/src/tokens.rs`: build the resources as `xaml::Element`s (with text content) so `WeftTokens.xaml` and a page's `Page.Resources` share one writer. `GenerateOptions` gains `shared_tokens` and `appearance`; the generator records every token it references and, with `shared_tokens: false`, writes only those into `Page.Resources` (a referenced token WinUI has no form for is refused).
+3. `import_winui`: regenerate in the mode the page shows (a `Page.Resources` element) and compare its entries by element type and `x:Key` only; `read_winui` reads the generator's `Weft.*` page resources as nothing to lose.
+4. `Weft.cs`: `ColumnsLayout`, a `NonVirtualizingLayout` sharing the column arithmetic with `ColumnsPanel`. A `grid` with `min-column-width` whose only child is an `<each>` of one element becomes an `ItemsRepeater` laid out by it; `read_winui` reads it back as the `grid` and its `<each>`.
+5. CLI: `weft winui --shared-tokens/--no-shared-tokens`, precedence flag > `export.winui.sharedTokens` > default (true in a project, false without one); `settings.rs` row, regenerated `schemas/weft.schema.json`, `docs/cli.md`, `docs/projects.md`, the crate README.
+6. Tests: a `tokens` fixture generated with per-page tokens and a repeated reflowing grid in the `repetition` fixture (goldens, both read-backs, the Windows build); unit tests for the token subset, the refusal, the loose comparison and an edited value; CLI tests for each option and the precedence. Verify with `moon run root:changed`, then the full check, and the green `winui` job.
+
+Result: https://github.com/pyrlyn/weft/pull/122. `weft winui --no-shared-tokens` (or `export.winui.sharedTokens` `false`, or no project) gives a page whose `Page.Resources` holds only the tokens it references, written as `WeftTokens.xaml` writes them; a referenced token WinUI has no form for is refused. `import_winui` regenerates in the mode the page shows and compares those resources by element and `x:Key`; `read_winui` skips a `Page.Resources` of `Weft.` entries. A `min-column-width` grid whose only child is an `<each>` of one element is an `ItemsRepeater` with a `weft:ColumnsLayout` (a `NonVirtualizingLayout` sharing `ColumnsPanel`'s arithmetic in `Weft.cs`) and reads back as the grid. The `tokens` fixture and the repetition fixture's photo grid have goldens that read back both ways and build in the Windows `winui` job.
 
 ### T105.10. WinUI target: SPEC, AGENT-SPEC and docs
 
@@ -1618,6 +1675,14 @@ Execution plan:
 5. Verify: `moon run root:changed`, jactionlint, the job green on the PR, a red run on a deliberately broken golden linked in the PR, then reverted.
 
 Result: green on the T105.1–T105.2 goldens (https://github.com/pyrlyn/weft/actions/runs/38657119567), red on a deliberately broken golden (https://github.com/pyrlyn/weft/actions/runs/38657589703, reverted). The first run caught a real fault: x:Bind cannot name a C# keyword, so the generator now refuses keyword data names (https://github.com/pyrlyn/weft/actions/runs/38656182916).
+
+### T105.17. WinUI data paths named like C# keywords
+
+Found when T105.10 closed: `corpus-account` binds `$.account.public`, and the generator refuses it because `public` is a C# keyword. The first decision, the C# verbatim identifier `@public`, cannot work: in the open-source XAML compiler (microsoft/microsoft-ui-xaml `main` @ 866ba81a, checked 2026-10-17) the `'@' Identifier_or_keyword` branch of `src/XamlCompiler/BuildTasks/BindingPath/CSharpIdentifier.g4` is commented out, `BindingPath.g4` accepts no `@`, and `PropertyStepCodeGenerator` in `src/XamlCompiler/BuildTasks/CodeGenerators/BindPathStepCodeGenerators.cs` writes property names into the generated `.g.cs` unescaped (CS1055/CS0106 on `class` and `event` in T105.7's run 38656182916). The creator's new decision: a C# reserved keyword gets a `_` suffix, so the view-model property is `public_` and x:Bind reads `ViewModel.account.public_`; a Weft name that is already a keyword followed by underscores (a real `public_`) gets one more (`public__`), and the importer strips exactly one `_` from a name that is a keyword followed by one or more underscores. Data paths and the round trip stay unchanged; only the C# member changes. Contextual keywords stay ordinary names. Done when `corpus-account` leaves `PENDING`, its golden builds in the Windows job, it round-trips, and tests cover the suffix, the double suffix and the importer's stripping.
+
+**Execution plan.** (1) `crates/weft-winui/src/data.rs`: replace the keyword refusal with `member(name)` (Weft name → C# member) and `weft_name(member)` (its inverse), checked against the official reserved-keyword list; `walk` writes the member into the x:Bind path. (2) `src/csharp.rs`: properties, backing fields and the list accesses use the member; `WeftPath` keeps the Weft name. (3) `src/read/values.rs`: `data_path` maps each member back with `weft_name`. (4) Unit tests for both functions and the bijection over every keyword; a generator test for `$.public`, `$.public_` and `$.a.class` and a read-back test; `corpus-account` out of `PENDING` with its goldens. (5) SPEC §9 (to and from WinUI), `AGENT-SPEC.md` if it mentions the refusal, `docs/winui-design.md` (the rule, the keyword list with its source). Verify with `moon run root:changed`, then the full check, then the Windows `winui` job in CI.
+
+Result: https://github.com/pyrlyn/weft/pull/121. `corpus-account` generates (`ViewModel.account.public_`), its goldens join the Windows build, and it round-trips through `import_winui` and `read_winui`. `data::member` adds the `_` to all 77 reserved keywords (alone or already followed by `_`), `data::weft_name` strips exactly one on read-back; unit tests cover every keyword and its suffixed forms, `tests/winui.rs` the generated members and x:Bind paths, `tests/read.rs` the stripping and the round trip of a keyword screen. SPEC §9, `docs/winui-design.md` and `research.md` record the rule and why `@` fails.
 
 ### T72. One `weft` command again; batch ids fail at the source
 
@@ -2020,3 +2085,163 @@ Execution plan:
 3. Run the plugin build, clippy and tests, the nested audit, and the full repository merge gate. Close this card only after successful checks.
 
 Done: reused the existing shared host at merged commit `7fc02456ec732e6b742ffb8245ad78d5318e7b9d`; the nested lockfile now contains Wasmtime/WASI 49.0.3 and no Wasmtime 43. The nested RustSec audit changed from vulnerable to clean. Plugin build, strict host/guest clippy, all 21 plugin tests (including four end-to-end cases), and the full 38-task repository gate passed. No guest ABI, generated output, new dependency, or custom implementation was needed.
+
+### T69.3b. Layers list and inspector read
+
+First read-only slice of T69 milestone 3. The layers panel and the property inspector need the open screen's elements by the same paths diagnostics use (SPEC §6.1), before either one writes a patch. `Editor::layers` lists every element in document order: the element, then its children, then each slot. `Editor::inspect` returns that element's kind, id, props, events and direct children. A path that is not in the document reads as nothing. Saving is unchanged, and there is no new `weft.json` key. Done when login's rows and the submit button's binding match the markup, a missing path reads as nothing, and every corpus screen lists the same elements as `element_paths`.
+
+**Execution plan.** (1) `layers` in `crates/weft-studio`, using `path_segment` so the names match diagnostics. (2) Tests over login and the corpus. (3) `cargo fmt`, `cargo test -p weft-studio --test layers`, clippy. No SPEC change: the paths already exist.
+
+Result: the list and the read. The canvas, selection from a point, and writing a patch stay open.
+
+Model: Cursor / Grok 4.7 · Status: done · Priority: P2 · Complexity: 2
+Check: `cargo test -p weft-studio --test layers`.
+### T69.2a. Embedded Slint components
+
+First slice of T69 milestone 2 (the canvas). T69.1 renders one screen as an exported `Window`. Several screens on one surface need each screen as a component inside the host's own window: Slint 1.18 has no `ComponentContainer` unless experimental features are on. `generate_embedded` prints `component <Name>Screen inherits Rectangle` (not exported), with the screen's `label` as `accessible-label`, the screen box filling that rectangle, and the component's preferred size taken from the box. A `menu` is refused, because a `MenuBar` is legal only in a `Window` (Slint 1.18). `generate`, `weft slint` and `import_slint` stay on the `Window` form, so there is no new `weft.json` key. Done when every corpus screen without a menu compiles inside a host `Window`, two of them compile in one file, the menu screen is refused and still generates as a `Window`, and the existing goldens are unchanged.
+
+**Execution plan.** (1) SPEC §9 "To Slint" and the `menu` row, AGENT-SPEC §5, and the crate README, in the same change as the code. (2) `generate_embedded` in `crates/weft-slint` sharing the generator with `generate`. (3) `tests/slint.rs`: every corpus screen and the controls fixture either compiles inside a host window or is refused only for a menu; `login` keeps its label and preferred size; `menu` is the only refusal; two screens compile as one file. (4) `cargo fmt`, `cargo test -p weft-slint --test slint`, clippy on the crate.
+
+Result: `generate_embedded` returns the component name, the sorted `std-widgets` imports and the component source. The `Window` goldens are unchanged. Pan, zoom, rulers and selection stay for later slices of milestone 2.
+
+### T69.1. Editor skeleton
+
+Milestone 1 of T69: a native window on macOS and on Windows hosts one Slint surface through slint-bindings, shows one corpus screen rendered by `weft-slint`, and opens and saves `.weft` files through the native file dialogs. The creator approved this plan and every decision below with its recommendation. It splits into five sub-tasks, T69.1a–T69.1e, each within the 500-line limit and each claimed as its own row with the plan below. Facts were checked on 2026-10-08; sources are at the end of the card.
+
+**What exists today.**
+
+- Weft: `weft-slint` generates every corpus screen, and the generated files compile with `slint-interpreter` 1.18.1 (T67–T67.5). The interpreter is a dev-dependency only. Two private copies of a compile helper live in `crates/weft-slint/tests/slint.rs` and `tests/screenshots.rs`, and the second also feeds `data.json` into a component's properties (about 150 lines). Project discovery (`find_project`) and the file-reading project loader are private to `crates/weft-cli/src/main.rs`. The workspace forbids `unsafe_code`; `weft-node` overrides it with its own `[lints]`.
+- The name WeftEditor and the bundle id `dev.weft.editor` already belong to the host app of the Source Editor Extension (`plugins/xcode/editor-extension/project.yml`), which also exports the file type `dev.weft.screen`.
+- slint-bindings (`listepo/slint-bindings`, `main` at `2b9fa96`): the table under "What M1 needs from T68".
+
+**Architecture (recommended).**
+
+```text
+studio/macos (SwiftUI + AppKit)                studio/windows (WinUI 3, C#)
+  menus, NSOpenPanel, NSSavePanel                MenuBar, FileOpenPicker, FileSavePicker
+  SlintNSView (from slint-bindings)              SlintPanel (from slint-bindings)
+     │ ws_* editor API   │ sb_* surface             │ ws_*            │ sb_*
+     └──────── one Rust library: libweft_studio_ffi (.a on macOS, .dll on Windows) ────────┘
+        crates/weft-studio-ffi   ws_* C ABI; links slint-bindings-ffi, so sb_* ship in the same library
+        crates/weft-studio       document core: open, save, project, render input (no Slint)
+        crates/weft-slint        generate; new `runtime` feature: interpreter compile and sample data
+        slint-bindings-core/-ffi (git dependency): host-driven platform, EmbeddedHost, SbHost
+```
+
+- Rust owns the document and the Slint component. A shell holds two opaque handles, `WsEditor*` for the document and `SbHost*` for the surface, and never sees Weft markup or Slint source. The existing slint-bindings views draw the surface and feed it input; the shells add only chrome and dialogs, so no editor logic is written twice.
+- One Rust library per app. Two Rust static libraries in one app would each carry a copy of Slint, and the screen component would not find the platform that slint-bindings installed.
+
+**Where the code lives.**
+
+| Path | What it holds |
+| --- | --- |
+| `crates/weft-studio` | The document core and the editor API as Rust types. No Slint, no FFI, the workspace lints unchanged. |
+| `crates/weft-studio-ffi` | The `ws_*` C ABI. `crate-type = ["rlib"]`; the static library and the DLL are built on demand, as slint-bindings' justfile does. Its own `[lints]` set `unsafe_code = "deny"` and allow it only in the `extern "C"` module, as `weft-node` does. Committed `include/weft_studio.h` (cbindgen) and `NativeMethods.g.cs` (csbindgen), both checked by a drift test, as `scull-ffi` does. |
+| `studio/macos` | XcodeGen `project.yml` (as `plugins/xcode` uses it), the SwiftUI app WeftStudio, bundle id `dev.weft.studio`, macOS 14, arm64 only. |
+| `studio/windows` | `WeftStudio.WinUI` (.NET 10, Windows App SDK 2.5.1 like the slint-bindings control, unpackaged, x64 and ARM64) and `WeftStudio.Tests`. |
+| `studio/test`, `studio/moon.yml` | Vitest drivers that build and smoke-test each shell and skip with a message on the other OS or without its toolchain, as `plugins/xcode/test` does; the task `studio:test`. |
+
+**Depending on slint-bindings.** Recommended: a Cargo git dependency on `slint-bindings-core` and `slint-bindings-ffi` from https://github.com/listepo/slint-bindings, pinned by `rev`. That rev is the only pin. The Swift package and the C# control come from the checkout Cargo made of the same commit: `cargo metadata` gives the `manifest_path` of `slint-bindings-ffi`, and a script passes the checkout to XcodeGen as `${SLINT_BINDINGS_DIR}` (a local package) and to MSBuild as a generated, gitignored `.props` file (a `ProjectReference`). For co-development, a gitignored `.cargo/config.toml` `[patch]` points at a sibling checkout and moves all three languages at once, the way ketch consumes `file-backup` (`rust.md`, "Shared crates across projects"). Rejected: a path dependency (`rust.md`: a bare path breaks every standalone checkout and CI run of a public repo); a published crate (slint-bindings is `publish = false`, and its core depends on the vendored `slint-embed` path crate); a git submodule (every agent worktree would need its own `git submodule update`). When slint-bindings ships packages (its T9: XCFramework, NuGet), the shells switch to them.
+
+**Build and checks.**
+
+- macOS: XcodeGen 2.46.0 (already in `mise.toml`). A pre-build script phase runs `cargo rustc -p weft-studio-ffi --crate-type staticlib --target aarch64-apple-darwin` (`--release` for Release); the app links that library and the frameworks slint-bindings' `Package.swift` lists (AppKit, CoreFoundation, CoreGraphics, CoreText, Foundation). Signed ad hoc, no App Sandbox in M1 (decision 5).
+- Windows: `dotnet build studio/windows`; a `BeforeBuild` target runs `cargo rustc -p weft-studio-ffi --crate-type cdylib --target x86_64-pc-windows-msvc` (or `aarch64-pc-windows-msvc`) and copies the DLL next to the app.
+- moon: `root:rust-test` and `root:rust-lint` already cover `crates/**` with `--workspace --all-features`, so the core, the runtime feature and the headless FFI tests run in the full check on any OS (the software platform needs no window). `studio` joins `.moon/workspace.yml` and `pnpm-workspace.yaml`; `studio:test` runs the macOS legs on a Mac with Xcode and the Windows legs on Windows with the .NET SDK. The full check runs on macOS by hand today, and the open T73 pull request (#4) adds a macOS runner only, so nothing automated builds the Windows shell (decision 4).
+
+**Slint at run time: interpreter, not compile-time `.slint`.** `slint-build` compiles `.slint` files when the app is built; the editor opens files the user picks at run time, so only `slint-interpreter` fits. It loads `.slint` source at run time (`Compiler::build_from_source`, `ComponentDefinition::create`), and its `ComponentInstance` implements `ComponentHandle`, which is the bound of slint-bindings' `EmbeddedHost<C: ComponentHandle>`: an interpreted screen goes into the existing host unchanged. The build is `async`, but only truly so with a file loader; without one a poll loop is enough, as Weft's tests already do. Features: `compat-1-18` and `std` without defaults (no backend, no renderer), because slint-bindings supplies the platform and the software renderer. Both repositories must resolve to one `i-slint-core`: slint-bindings pins `=1.18.1` and Weft's lockfile has 1.18.1. Style `fluent` on both platforms, as the screenshot baselines use. For later milestones: several screens on one surface (M2) cannot use `ComponentContainer` or `component-factory`, because in 1.18.1 the compiler removes both from its builtin register unless experimental features are on, and `slint::ComponentFactory` is `#[doc(hidden)]` and deprecated as "made public by mistake". M2 will compile one source that holds the editor's own components and the screens as sub-components, with a `weft-slint` option to emit a plain component instead of `inherits Window`. M1 needs neither, and the API below leaves room for both.
+
+**Editor API v0** (`include/weft_studio.h`):
+
+```c
+typedef struct WsEditor WsEditor;
+typedef void (*WsEventFn)(void *user_data, const char *event_json);
+
+uint32_t ws_api_version(void);                                    /* 0; a shell refuses any other */
+WsEditor *ws_editor_new(WsEventFn on_event, void *user_data);
+void ws_editor_free(WsEditor *editor);
+bool ws_open(WsEditor *editor, const char *path);                 /* UTF-8 path from the native dialog */
+bool ws_save(WsEditor *editor, const char *path);                 /* NULL: the current path */
+char *ws_state_json(const WsEditor *editor);                      /* free with ws_string_free */
+struct SbHost *ws_surface_new(WsEditor *editor, uint32_t width, uint32_t height, float scale);
+void ws_string_free(char *text);
+const char *ws_last_error(void);
+```
+
+- **Threads.** Every call comes from the thread that created the editor (the UI thread), as slint-bindings requires. Slint calls back synchronously while it dispatches input.
+- **Errors.** A failed call returns `false` or `NULL` and leaves a message for `ws_last_error` (thread-local, valid until the next call). Every entry point catches panics; a null pointer or a string that is not UTF-8 is an error.
+- **Open.** Reads the file (at most 2 MB, the bound `weft-slint` puts on Slint input), finds and loads the project (SPEC §10.1–§10.2, never fatal: project diagnostics are kept), and parses the markup with the project's catalog and tokens, leniently. A syntax error refuses the open with its diagnostics; a document with validation errors opens and cannot render. M1 opens `.weft` markup only, not canonical JSON.
+- **Save.** Writes `serialize(document)` atomically (a temporary file in the same directory, then a rename), so a saved file is canonical and `weft fmt` leaves it unchanged; an unedited canonical file saves byte-identical. Saving to another path makes it the document's path.
+- **State.** `{"v":0,"path":…,"title":…,"screen":…,"dirty":false,"diagnostics":[…]}`; `title` is the file name, `dirty` is always false until M3 brings edits.
+- **Surface.** `ws_surface_new` generates Slint from the document (`weft_slint::generate` with the project's catalog and tokens), compiles it with the interpreter, fills the data properties from the project's `render.data` sample data when it is set (SPEC §10.6; no new setting), connects `perform(action, id)` to an `action` event, and returns a new `SbHost` that the shell owns and frees with `sb_host_free`. A refused screen returns `NULL` with the generator's message. The editor keeps only a weak handle to the component.
+- **Events** (JSON with `"v":0`): `{"type":"changed"}` after an open or a save (the shell reads `ws_state_json` for the title), and `{"type":"action","action":…,"id":…}` when the screen calls `perform`. Input reaches the screen through the `sb_host_*` calls of the slint-bindings views; M1 is a live preview (decision 7).
+- **Later, without changing v0:** `ws_apply_patches` (SPEC §7 through `weft_core::apply_patches`; undo and redo as inverse patches), selection, and selection events (M2–M3).
+
+**What M1 needs from T68.**
+
+| Need | slint-bindings today (`2b9fa96`) | Gap | Blocks |
+| --- | --- | --- | --- |
+| A host-driven platform: software renderer into a host buffer, resize and scale, pointer, key and focus input, timers | `slint-bindings-core` `EmbeddedHost<C: ComponentHandle>`, tested; 1.0 ms per changed frame and 8.4 ms for the first at 1600×1200 (release, Apple Silicon) | none | — |
+| An interpreted component in that host | `EmbeddedHost` is generic, but nothing hosts a `slint_interpreter::ComponentInstance` | G1: a test in slint-bindings that hosts one (its T11 starts there) | T69.1c |
+| A C ABI host over any component, made by another crate | `SbHost` wraps `EmbeddedHost<DemoForm>`; `sb_demo_new` is the only constructor, and the type is private | G2: `SbHost` over an interpreted component, plus a public Rust constructor (`SbHost::into_raw`) so a downstream crate returns `SbHost*`; the `sb_*` symbols stay exported when `slint-bindings-ffi` is linked as an rlib into another library | T69.1c |
+| A SwiftUI/AppKit view for a host made elsewhere, usable from another package | `SlintNSView` creates its own demo `SlintHost`; the library target links `../target/debug/libslint_bindings_ffi.a` through `unsafeFlags`, which SwiftPM refuses in a package another package depends on | G3: `SlintNSView` and `SlintHost` take the host from the caller; the library target links no Rust library (the app does); the `sb_demo_*` calls leave the library target | T69.1d |
+| A WinUI 3 control for a host made elsewhere | A skeleton never compiled (its T6); `SlintPanel` creates its own host | G4: it builds and runs on Windows (T6) and takes the host from the caller | T69.1e |
+| One Slint version | `=1.18.1` exact pins; Weft at 1.18.1 | none; upgrades move together | — |
+| Keyboard map and IME, popups, accessibility, GPU, packaging | its T4, T10, T14, T7–T8, T9, all todo | not needed for M1: ASCII typing works, and M1 only shows the screen | — |
+| The FFI guard (panic catch, last error) | private in `slint-bindings-ffi` | optional: public, so `ws_*` reuse it and share `sb_last_error`; otherwise `weft-studio-ffi` keeps a copy of about 30 lines | — |
+
+**G1–G4 are delivered** in slint-bindings `main` at `8971685e01fee6776e5121dffb13e3eb43709437` (the repository moved to `pyrlyn/slint-bindings`; `listepo/slint-bindings` redirects); T69.1c pins that `rev`. G1 and G2: its T11.1 (`291376b`): `slint-interpreter` components, `sb_compile`, `SbHost::new` and `SbHost::into_raw`. G3: its T70 (`a149da9`): `SlintHost(adopting:)`, `SlintNSView` and the SwiftUI `SlintView` take the host from a factory, the `SlintBindings` library target links no Rust library (`just swift-package-check`), and a test shows `crates/weft-slint/tests/fixtures/login.slint` in a SwiftUI window and types into it. G4: its T71 (`8971685`): `SlintHost.Adopt` and `SlintPanel.HostFactory`, MSTest host tests on `windows-latest`, and a CI run that opens the WinUI demo on the same screen and checks the window capture. `sb_host_pixel_size` (T70) gives an adopted host's size.
+
+T68's done criteria ("a Slint component generated by T67 shows and takes input inside a SwiftUI window") cover G1 and part of G2, not G3 or G4 (decision 3). slint-bindings' own plan overlaps Weft: its T12 builds `slint-bindings-weft`, a second Weft → Slint mapping beside `weft-slint`, and its T16 a Slint desktop app for Weft beside T69.
+
+**Sub-tasks** (order: T69.1a and T69.1b now and in parallel; T69.1c after G1–G2; T69.1d after T69.1c and G3; T69.1e after T69.1c, G4 and decision 4):
+
+- **T69.1a. Document core**: done (`done.md`). **T69.1b. Slint runtime**: done (`done.md`).
+- **T69.1c. Editor C ABI**: done (`done.md`). Open-to-first-frame in release on Apple Silicon at 480×800, scale 1: the largest corpus screen (`account`) takes about 110 ms as the first surface of a process (platform install included) and 40–80 ms after it; the compile is about 50 ms of that, so no definition cache. The first launch of a freshly linked binary adds a one-off 3–5 s inside the first `SbHost::new`, gone on every later launch.
+- **T69.1d. macOS shell**: done (`done.md`).
+- **T69.1e. Windows shell**: done (`done.md`), with T69.1f: the `studio-windows` job of `ci.yml` builds and tests the shell on `windows-latest`.
+
+**Done when** the four checks above pass on their platforms, the full check exits 0, every corpus screen opens and renders in both apps through the native open dialog and saves through the native save dialog (byte-identical when unedited), and neither shell contains embedding code of its own: the surfaces are slint-bindings' `SlintNSView` and `SlintPanel`.
+
+**Decisions** (the creator approved the recommendation, the first option, of each):
+
+1. **Name.** WeftStudio: folder `studio/`, crates `weft-studio` and `weft-studio-ffi`, bundle id `dev.weft.studio`, because WeftEditor and `dev.weft.editor` are taken by the Xcode extension's host app. The alternative is to rename that app.
+2. **The slint-bindings dependency.** A git dependency pinned by `rev`, with the Swift and C# parts found through `cargo metadata`, as above. Alternatives: a submodule, or waiting for slint-bindings' packages (its T9, milestone M4).
+3. **T68's scope.** Add G1–G4 to T68's done criteria, or as tasks in slint-bindings, because T69.1c–e cannot start without them. Drop or re-scope slint-bindings T12 (`slint-bindings-weft`) and T16 (a Slint desktop app for Weft): they duplicate `weft-slint` and T69. Approved and recorded here only: slint-bindings and T68 belong to another agent, which takes G1–G4 and the re-scope there.
+4. **Windows verification.** No one in this workspace has built the WinUI code yet, and there is no Windows runner. Recommended: a Windows job after T73 lands (`cargo nextest run -p weft-studio -p weft-studio-ffi` and the Windows leg of `studio:test`), as its own task. The alternative is the creator's Windows machine, by hand. Approved: T69.1f in `roadmap.md`.
+5. **App Sandbox.** M1 runs unsandboxed with ad hoc signing. A sandboxed app that `NSOpenPanel` gives one file cannot read the `weft.json`, tokens and catalog in the directories above it (SPEC §10.1) — **unverified**, from Apple's App Sandbox guide, whose page renders by script. Choose in milestone 6: open a project folder, or ask for its directory.
+6. **Save.** Always canonical; the alternative keeps the original bytes of an unedited non-canonical file.
+7. **Input in M1.** A live preview: pointer and keyboard reach the screen, and its `perform` calls arrive as `action` events. The alternative is a static picture until M2's selection mode.
+8. **Style.** `fluent` on both platforms, with no `weft.json` key while it is not a user option. The alternative is the platform style (`cupertino` on macOS).
+9. **Slint licence for distributed builds.** The Royalty-free licence 2.0 needs the `AboutSlint` widget in an About dialog reachable from the top-level menu, or the Slint badge on the public download page; GPLv3 is the other no-cost licence. With native-only chrome, the badge. Decide before milestone 6; M1 ships nothing.
+10. **Sample data.** Only the existing `render.data` key. The alternative, a `data.json` beside the screen as the corpus has, is a new convention and needs a SPEC change.
+
+**Risks.**
+
+- Open latency: every open compiles the screen and `std-widgets` (about 50 ms); T69.1c measured about 110 ms to the first frame of the largest screen, so nothing is cached.
+- App size: the interpreter carries the Slint compiler.
+- Slint upgrades must move Weft and slint-bindings together (exact pins there; T69.1c checks for one `i-slint-core`).
+- CPU rendering of large windows until slint-bindings' GPU milestone (its T7–T8).
+- The surface is invisible to VoiceOver and Narrator until slint-bindings T14, so the UI tests check it by screenshot.
+- `#[no_mangle]` functions of an rlib can be left out of a library that never references the crate; T69.1c references it and checks the exports.
+- `slint-embed` is a path dependency inside the slint-bindings repository, under `flutter/`; T69.1c confirms that it resolves from the git checkout.
+
+**Not in M1:** editing, patches, undo and redo, more than one screen, the canvas, selection, the layers tree and the inspector, recent files and the document browser, settings, autosave, canonical JSON documents, sandboxing, signing and packaging, GPU rendering, IME beyond ASCII, accessibility.
+
+**Sources** (checked 2026-10-08):
+
+- slint-interpreter 1.18.1: run-time loading, `ComponentInstance` implements `ComponentHandle`, the async build: https://docs.rs/slint-interpreter/1.18.1/slint_interpreter/
+- Slint 1.18.1, experimental `ComponentContainer` and `component-factory`: https://github.com/slint-ui/slint/blob/v1.18.1/internal/compiler/typeregister.rs (`builtin` removes both) and https://github.com/slint-ui/slint/blob/v1.18.1/api/rs/slint/lib.rs (`ComponentFactory` hidden and deprecated)
+- Slint licences 1.18.1: https://github.com/slint-ui/slint/blob/v1.18.1/LICENSE.md and https://github.com/slint-ui/slint/blob/v1.18.1/LICENSES/LicenseRef-Slint-Royalty-free-2.0.md
+- Cargo git dependencies (found anywhere in the repository, locked in `Cargo.lock`): https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
+- SwiftPM 6.4.0, unsafe flags make a product ineligible for other packages: https://github.com/swiftlang/swift-package-manager/blob/swift-6.4.0-RELEASE/Sources/Runtimes/PackageDescription/BuildSettings.swift
+- XcodeGen 2.46.0, `${VARIABLE}` in the spec and local packages: https://github.com/yonaskolb/XcodeGen/blob/2.46.0/Docs/ProjectSpec.md
+- Windows App SDK pickers (1.8 and later, `AppWindow.Id`, `PickFileResult.Path`; page dated 2026-07-15): https://learn.microsoft.com/en-us/windows/apps/develop/files/using-file-folder-pickers
+- FlaUI v5.0.0 (2025-02-25; repository active, last push 2026-08-13): https://github.com/FlaUI/FlaUI
+- slint-bindings at `2b9fa96` (2026-10-07): its `README.md`, `plan.md`, `done.md` (T2 frame times), `crates/slint-bindings-core/src/host.rs`, `crates/slint-bindings-ffi/src/lib.rs`, `swift/Package.swift`, `swift/Sources/SlintBindings/`, `windows/README.md`: https://github.com/listepo/slint-bindings/tree/2b9fa96b17464a628970ce1e1d6628b8c2580b30
+- Apple App Sandbox, user-selected files (**unverified**: the page renders by script): https://developer.apple.com/documentation/security/accessing-files-from-the-macos-app-sandbox
+
+Result: T69.1a–T69.1e are done (`done.md`). The document core opens every corpus screen and saves it byte-identical; the `ws_*` ABI renders it on a slint-bindings surface and reports `action` events; the macOS shell uses slint-bindings' `SlintNSView` and the Windows shell uses `SlintPanel`, and neither shell embeds Slint itself. `studio:test` runs the macOS UI test, and the `studio-windows` job runs the Windows model tests and the FlaUI smoke test.
+
+Model: Cursor / Grok 4.7 · Status: done · Priority: P2 · Complexity: 4
+Check: the checks of T69.1a–T69.1e.

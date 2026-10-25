@@ -1,7 +1,12 @@
 //! The document core of WeftStudio, the desktop editor (T69): one Weft screen opened from a
 //! `.weft` file with the project above it (SPEC §10.1), saved canonical, and the input a Slint
-//! surface renders. No Slint crate here: the shells' FFI crate compiles the source with the
-//! `weft-slint` runtime, so this core stays testable on its own.
+//! surface renders. [`Canvas`] places several of those screens as frames and keeps the view
+//! (pan, zoom) and the selection. No Slint crate here: the shells' FFI crate compiles the source
+//! with the `weft-slint` runtime, so this core stays testable on its own.
+
+mod canvas;
+
+pub use canvas::{Canvas, Focus, FrameGeom, MAX_ZOOM, MIN_ZOOM};
 
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -15,6 +20,10 @@ use weft_catalog::{
 };
 use weft_core::{Catalog, Diagnostic, Document, Mode, ParseOptions, parse, parse_json, serialize};
 use weft_slint::{GenerateError, GenerateOptions, MAX_SOURCE_LENGTH, generate};
+
+mod layers;
+
+pub use layers::{Inspection, Layer};
 
 /// The largest file `open` reads: the screen's markup travels inside the generated Slint source,
 /// so the bound `weft-slint` puts on Slint input is the bound here.
@@ -148,6 +157,10 @@ impl Editor {
         Ok(())
     }
 
+    pub(crate) fn document(&self) -> &Document {
+        &self.document
+    }
+
     pub fn state(&self) -> State {
         State {
             title: self
@@ -166,6 +179,16 @@ impl Editor {
                 .map(|open| open.diagnostics.clone())
                 .unwrap_or_default(),
         }
+    }
+
+    /// The open screen's elements in document order, named by diagnostic path (SPEC §6.1).
+    pub fn layers(&self) -> Vec<Layer> {
+        layers::layers(&self.document)
+    }
+
+    /// One element's kind, props, events and direct children, or nothing when `path` is absent.
+    pub fn inspect(&self, path: &str) -> Option<Inspection> {
+        layers::inspect(&self.document, path)
     }
 
     /// The screen as Slint, and the project's `render.data` sample data (SPEC §10.6) when set.

@@ -4,5 +4,4 @@
 - T69.1. Editor skeleton
 - T106. Weft plugin for cox
 - T106.7. Design tab: cox side
-- T105. Weft to WinUI 3 and back
-- T105.15. WinUI tokens, materials, tilt and reflowing repeats
+- T903. macOS studio UI test: Save As writes nothing locally

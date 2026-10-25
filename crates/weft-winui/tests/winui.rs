@@ -10,7 +10,8 @@
 mod common;
 
 use common::{
-    NAMESPACE, PENDING, controls, covered, document, here, options, screen, screens, setup,
+    KEYWORDS_BODY, NAMESPACE, PENDING, controls, covered, document, here, options, screen, screens,
+    setup,
 };
 use weft_winui::{
     GenerateError, GenerateOptions, Generated, TOKENS_FILE, generate, generate_tokens, helpers,
@@ -98,7 +99,7 @@ fn generated_files_match_the_golden_files() {
     balanced("Weft.cs", &shared);
     golden("Weft.cs", &shared);
     let (_, tokens) = setup();
-    golden(TOKENS_FILE, &generate_tokens(&tokens).0);
+    golden(TOKENS_FILE, &generate_tokens(&tokens, None).0);
 }
 
 fn data() -> Generated {
@@ -298,8 +299,17 @@ fn what_the_slice_cannot_draw_is_refused_with_its_path() {
             "date-picker#d",
         ),
         (r#"<alert id="a" tone="{$.tone}">A</alert>"#, "alert#a"),
+        // A choice or a menu holds one template, of one item.
         (
-            r#"<select id="sel" label="S" value="{$.v}"><each id="e" as="o" in="{$.os}"><option id="o" value="{$o.v}">O</option></each></select>"#,
+            r#"<select id="sel" label="S" value="{$.v}"><each id="e" as="o" in="{$.os}"><option id="o" value="{$o.v}">O</option></each><each id="f" as="p" in="{$.ps}"><option id="p" value="{$p.v}">P</option></each></select>"#,
+            "each#f",
+        ),
+        (
+            r#"<menu id="m" label="M"><each id="e" as="a" in="{$.as}"><menu-item id="i" text="{$a.t}"/><menu-item id="j" text="{$a.u}"/></each></menu>"#,
+            "each#e",
+        ),
+        (
+            r#"<radio-group id="rg" label="R"><each id="e" as="o" in="{$.os}"><radio id="o" value="{$o.v}">O</radio></each></radio-group>"#,
             "each#e",
         ),
         // Star columns alone are a `grid`'s tracks.
@@ -307,9 +317,10 @@ fn what_the_slice_cannot_draw_is_refused_with_its_path() {
             r#"<stack id="r" direction="row"><text id="a" grow="true">A</text></stack>"#,
             "stack#r",
         ),
+        // A control holds its items as its own type, so no tilt wrapper fits around one.
         (
-            r#"<stack id="r" material="{token.material.glass}"><text id="a">A</text></stack>"#,
-            "stack#r",
+            r#"<select id="se" label="S"><option id="o" value="a" rotate-y="10">A</option></select>"#,
+            "option#o",
         ),
         (
             r#"<stack id="r"><each id="e" as="o" in="{$.os}"><text id="t" grow="true" text="{$o.v}"/></each></stack>"#,
@@ -330,14 +341,9 @@ fn what_the_slice_cannot_draw_is_refused_with_its_path() {
             r#"<grid id="g" columns="101"><text id="a">A</text></grid>"#,
             "grid#g",
         ),
-        // A repeater cannot share a grid's tracks, fill a choice, or sit among static items or
-        // columns.
+        // A repeater cannot share a grid's tracks, or sit among a list's static items or columns.
         (
             r#"<grid id="g" columns="2"><each id="e" as="x" in="{$.xs}"><text id="t" text="{$x.a}"/></each></grid>"#,
-            "each#e",
-        ),
-        (
-            r#"<select id="se" label="S"><each id="e" as="x" in="{$.xs}"><option id="o" value="{$x.a}">O</option></each></select>"#,
             "each#e",
         ),
         (
@@ -371,8 +377,6 @@ fn what_the_slice_cannot_draw_is_refused_with_its_path() {
             r#"<text id="t" text="{$.user.WeftPath}"/>"#,
             "$.user.WeftPath",
         ),
-        // An x:Bind path names a C# member, so a keyword cannot be one.
-        (r#"<text id="t" text="{$.class}"/>"#, "$.class"),
         (
             r#"<stack id="r" padding="{$.p}"><text id="a">A</text></stack>"#,
             "stack#r",
@@ -580,6 +584,41 @@ fn a_name_csharp_cannot_hold_is_refused() {
 }
 
 #[test]
+fn a_keyword_takes_a_suffix_on_its_csharp_member() {
+    let (catalog, tokens) = setup();
+    let doc = document(&screen(KEYWORDS_BODY), &catalog, &tokens);
+    let generated = generate(&doc, &options(&catalog, &tokens, None)).unwrap();
+    let vm = &generated.view_model_source;
+    let root = class(vm, "SViewModel");
+    for line in [
+        "public bool public_\n",
+        "set => WeftSet(ref Weft_public_, value);",
+        // A name that already ends like a suffixed keyword takes one more `_`.
+        "public string public__\n",
+        "private string Weft_public__ = \"\";",
+        // A contextual keyword is an ordinary name.
+        "public string value\n",
+        "public ObservableCollection<SClassItem> class_ { get; } = new();",
+        "class_.CollectionChanged += (_, _) => WeftPlaceLists();",
+        // The item's path is the Weft path, which events report.
+        "Weft.Place(class_, this, null, \"$.class\");",
+    ] {
+        assert!(root.contains(line), "{line}\n{root}");
+    }
+    let item = class(vm, "SClassItem");
+    assert!(item.contains("public string event_\n"), "{item}");
+    for xaml in [
+        "IsOn=\"{x:Bind ViewModel.public_, Mode=TwoWay}\"",
+        "Text=\"{x:Bind ViewModel.public__, Mode=OneWay}\"",
+        "Text=\"{x:Bind ViewModel.value, Mode=OneWay}\"",
+        "ItemsSource=\"{x:Bind ViewModel.class_, Mode=OneWay}\"",
+        "Text=\"{x:Bind event_, Mode=OneWay}\"",
+    ] {
+        assert!(generated.xaml.contains(xaml), "{xaml}\n{}", generated.xaml);
+    }
+}
+
+#[test]
 fn a_namespace_must_be_a_csharp_namespace() {
     let (catalog, tokens) = setup();
     let doc = document(&screen(""), &catalog, &tokens);
@@ -642,4 +681,184 @@ fn a_screen_strict_validation_rejects_is_not_generated() {
         matches!(result, Err(GenerateError::Invalid(_))),
         "{result:?}"
     );
+}
+
+#[test]
+fn a_material_is_a_border_and_a_tilt_turns_it_under_its_perspective() {
+    let (catalog, tokens) = setup();
+    let markup = screen(concat!(
+        r#"<stack id="card" material="{token.material.glass}" padding="{token.space.sm}" "#,
+        r#"hidden="{$.gone}" perspective="800" rotate-x="-4" rotate-y="12"><text id="t">T</text></stack>"#,
+    ));
+    let doc = document(&markup, &catalog, &tokens);
+    let generated = generate(&doc, &options(&catalog, &tokens, None)).unwrap();
+    let xml = roxmltree::Document::parse(&generated.xaml).unwrap();
+    let card = by_id(&xml, "card");
+    let surface = card.parent_element().unwrap();
+    let view = surface.parent_element().unwrap();
+    // The surface is the stack's box: its background and padding, turned as one.
+    assert_eq!(
+        surface.attribute("Background"),
+        Some("{ThemeResource Weft.material.glass}")
+    );
+    assert_eq!(
+        surface.attribute("Padding"),
+        Some("{StaticResource Weft.space.sm.thickness}")
+    );
+    assert_eq!(card.attribute("Padding"), None);
+    assert_eq!(surface.attribute("Tilt.Centered"), Some("True"));
+    let turn = surface
+        .descendants()
+        .find(|n| n.has_tag_name("CompositeTransform3D"))
+        .unwrap();
+    // CSS turns clockwise, WinUI counter-clockwise.
+    assert_eq!(turn.attribute("RotationX"), Some("4"));
+    assert_eq!(turn.attribute("RotationY"), Some("-12"));
+    assert_eq!(turn.attribute("RotationZ"), None);
+    // The perspective is an ancestor's, and the outermost wrapper hides the whole.
+    assert_eq!(view.tag_name().name(), "Border");
+    let depth = view
+        .descendants()
+        .find(|n| n.has_tag_name("PerspectiveTransform3D"))
+        .and_then(|n| n.attribute("Depth"));
+    assert_eq!(depth, Some("800"));
+    assert!(view.attribute("Visibility").is_some(), "{}", generated.xaml);
+    assert_eq!(surface.attribute("Visibility"), None);
+    assert_eq!(card.attribute("Visibility"), None);
+}
+
+/// The `x:Key`s of the page's own resources, in order, each with its element.
+fn own_keys(xaml: &str) -> Vec<String> {
+    let xml = roxmltree::Document::parse(xaml).unwrap();
+    let Some(resources) = xml.descendants().find(|n| n.has_tag_name("Page.Resources")) else {
+        return vec![];
+    };
+    let key = ("http://schemas.microsoft.com/winfx/2006/xaml", "Key");
+    resources
+        .descendants()
+        .filter_map(|n| Some(format!("{} {}", n.tag_name().name(), n.attribute(key)?)))
+        .collect()
+}
+
+#[test]
+fn a_page_with_its_own_tokens_holds_only_the_ones_it_uses() {
+    let (catalog, tokens) = setup();
+    let markup = screen(concat!(
+        r#"<stack id="card" gap="{token.space.md}" material="{token.material.glass}">"#,
+        r#"<text id="t">T</text></stack>"#,
+    ));
+    let doc = document(&markup, &catalog, &tokens);
+    let own = |appearance| GenerateOptions {
+        shared_tokens: false,
+        appearance,
+        ..options(&catalog, &tokens, None)
+    };
+    let generated = generate(&doc, &own(None)).unwrap();
+    assert_eq!(
+        own_keys(&generated.xaml),
+        [
+            "ResourceDictionary Light",
+            "AcrylicBrush Weft.material.glass",
+            "ResourceDictionary Dark",
+            "AcrylicBrush Weft.material.glass",
+            "ResourceDictionary HighContrast",
+            "SolidColorBrush Weft.material.glass",
+            "Double Weft.space.md",
+            "Thickness Weft.space.md.thickness",
+        ]
+    );
+    // The shared form references the same resources and holds none.
+    let shared = generate(&doc, &options(&catalog, &tokens, None)).unwrap();
+    assert!(own_keys(&shared.xaml).is_empty());
+    let strip = |x: &str| x.split("<Page.Resources>").next().unwrap().to_owned();
+    assert_eq!(
+        strip(&generated.xaml),
+        strip(&shared.xaml).split("<ScrollViewer>").next().unwrap()
+    );
+    // A page that uses no token needs no resources.
+    let plain = document(&screen(r#"<text id="t">T</text>"#), &catalog, &tokens);
+    let generated = generate(&plain, &own(None)).unwrap();
+    assert!(!generated.xaml.contains("Page.Resources"));
+    // The dark values of an appearance go to the `Dark` dictionary.
+    let mut dark = tokens.clone();
+    dark["material.glass"].value = weft_core::parse_json(
+        r##"{ "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.5 }"##,
+    )
+    .unwrap();
+    let appearance = weft_catalog::Appearance {
+        modifier: "theme",
+        light_context: "light",
+        dark_context: "dark",
+        light: &tokens,
+        dark: &dark,
+    };
+    let generated = generate(&doc, &own(Some(appearance))).unwrap();
+    assert!(
+        generated.xaml.contains("TintColor=\"#FF000000\""),
+        "{}",
+        generated.xaml
+    );
+}
+
+#[test]
+fn an_own_token_with_no_winui_form_is_refused() {
+    let (catalog, mut tokens) = setup();
+    tokens["space.md"].value = weft_core::parse_json(r#"{ "value": 1, "unit": "em" }"#).unwrap();
+    let doc = document(
+        &screen(r#"<stack id="card" gap="{token.space.md}"><text id="t">T</text></stack>"#),
+        &catalog,
+        &tokens,
+    );
+    let own = GenerateOptions {
+        shared_tokens: false,
+        ..options(&catalog, &tokens, None)
+    };
+    let Err(GenerateError::Unsupported(problems)) = generate(&doc, &own) else {
+        panic!("an `em` dimension was written");
+    };
+    assert_eq!(problems.len(), 1);
+    assert_eq!(problems[0].path, "stack#card");
+    assert!(problems[0].message.contains("space.md"), "{}", problems[0]);
+    // The shared dictionary leaves it out and says so; the page only references it.
+    assert!(generate(&doc, &options(&catalog, &tokens, None)).is_ok());
+}
+
+#[test]
+fn an_each_alone_in_a_reflowing_grid_is_a_columns_layout() {
+    let (catalog, tokens) = setup();
+    let grid = |body: &str| {
+        screen(&format!(
+            r#"<grid id="g" columns="2" min-column-width="{{token.size.sm}}" padding="{{token.space.sm}}">{body}</grid>"#
+        ))
+    };
+    let one = r#"<each id="e" as="p" in="{$.photos}"><text id="c" text="{$p.caption}"/></each>"#;
+    let doc = document(&grid(one), &catalog, &tokens);
+    let generated = generate(&doc, &options(&catalog, &tokens, None)).unwrap();
+    let xml = roxmltree::Document::parse(&generated.xaml).unwrap();
+    let repeater = by_id(&xml, "g");
+    assert_eq!(repeater.tag_name().name(), "ItemsRepeater");
+    // A repeater has no padding: the layout keeps it around the columns.
+    assert_eq!(repeater.attribute("Padding"), None);
+    let layout = repeater
+        .descendants()
+        .find(|n| n.tag_name().name() == "ColumnsLayout")
+        .unwrap();
+    assert_eq!(layout.attribute("Columns"), Some("2"));
+    assert_eq!(
+        layout.attribute("Padding"),
+        Some("{StaticResource Weft.space.sm.thickness}")
+    );
+    // A cell is one element, and a repeater cannot share the columns with static cells.
+    for body in [
+        r#"<each id="e" as="p" in="{$.photos}"><text id="c" text="{$p.caption}"/><text id="d">D</text></each>"#,
+        &format!(r#"<text id="first">First</text>{one}"#),
+    ] {
+        let doc = document(&grid(body), &catalog, &tokens);
+        let Err(GenerateError::Unsupported(problems)) =
+            generate(&doc, &options(&catalog, &tokens, None))
+        else {
+            panic!("{body}");
+        };
+        assert_eq!(problems[0].path, "each#e", "{body}");
+    }
 }

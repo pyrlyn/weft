@@ -2,27 +2,42 @@
 //! the trust boundary of the generator: every attribute value is escaped as XML here, and
 //! document text becomes a value only through `literal`.
 
+use std::borrow::Cow;
+
 use weft_core::escape_attribute;
 
 const INDENT: &str = "    ";
 
 pub struct Element {
-    pub name: &'static str,
+    pub name: Cow<'static, str>,
     attrs: Vec<(String, String)>,
     pub children: Vec<Element>,
+    /// The content of an element without children, such as a resource's value.
+    text: Option<String>,
 }
 
 impl Element {
-    pub fn new(name: &'static str) -> Self {
+    pub fn new(name: impl Into<Cow<'static, str>>) -> Self {
         Element {
-            name,
+            name: name.into(),
             attrs: vec![],
             children: vec![],
+            text: None,
         }
+    }
+
+    pub fn text(&mut self, text: impl Into<String>) {
+        self.text = Some(text.into());
     }
 
     pub fn attr(&mut self, name: impl Into<String>, value: impl Into<String>) {
         self.attrs.push((name.into(), value.into()));
+    }
+
+    /// Removes an attribute already set and returns its value, for a wrapper to carry instead.
+    pub fn take(&mut self, name: &str) -> Option<String> {
+        let at = self.attrs.iter().position(|(n, _)| n == name)?;
+        Some(self.attrs.remove(at).1)
     }
 
     /// The value of an attribute already set.
@@ -36,9 +51,14 @@ impl Element {
     pub fn write(&self, depth: usize, out: &mut String) {
         out.push_str(&INDENT.repeat(depth));
         out.push('<');
-        out.push_str(self.name);
+        out.push_str(&self.name);
         for (name, value) in &self.attrs {
             out.push_str(&format!(" {name}=\"{}\"", escape_attribute(value)));
+        }
+        if let Some(text) = self.text.as_deref().filter(|_| self.children.is_empty()) {
+            let name = &self.name;
+            out.push_str(&format!(">{}</{name}>\n", escape_attribute(text)));
+            return;
         }
         if self.children.is_empty() {
             out.push_str(" />\n");
@@ -98,6 +118,19 @@ mod tests {
         assert_eq!(
             out,
             "<TextBlock Text=\"&quot;>&lt;x a='1'>&amp;&#10;\" />\n"
+        );
+    }
+
+    #[test]
+    fn text_content_is_escaped() {
+        let mut e = Element::new("x:Double");
+        e.attr("x:Key", "Weft.space.md");
+        e.text("<12&");
+        let mut out = String::new();
+        e.write(1, &mut out);
+        assert_eq!(
+            out,
+            "    <x:Double x:Key=\"Weft.space.md\">&lt;12&amp;</x:Double>\n"
         );
     }
 

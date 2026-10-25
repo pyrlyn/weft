@@ -14,15 +14,7 @@ use weft_winui::{GenerateOptions, Generated, generate};
 /// The screens the generator cannot draw yet: each is refused, every other corpus screen and
 /// example generates and has golden files the Windows build compiles (T105.7). T105.3–T105.5
 /// shrink this list until it is empty.
-pub const PENDING: &[&str] = &[
-    "corpus-account",
-    "corpus-booking",
-    "corpus-glass",
-    "corpus-showroom",
-    "corpus-tilt",
-    "example-menu-item",
-    "example-option",
-];
+pub const PENDING: &[&str] = &[];
 /// The namespace of the goldens: the Windows build compiles them in one project (T105.7).
 pub const NAMESPACE: &str = "WeftScreens";
 
@@ -69,8 +61,12 @@ pub const FIXTURES: &[&str] = &[
     "data",
     "layout",
     "repetition",
+    "tokens",
     "values",
 ];
+/// The screens generated with their own tokens in `Page.Resources` rather than the shared
+/// `WeftTokens.xaml`, so the Windows build compiles both forms.
+pub const OWN_TOKENS: &[&str] = &["tokens"];
 
 /// Every corpus screen and catalog example, named `corpus-<dir>` or `example-<file>`, and the
 /// fixtures.
@@ -103,6 +99,8 @@ pub fn options<'a>(
         tokens,
         name,
         namespace: NAMESPACE,
+        shared_tokens: true,
+        appearance: None,
     }
 }
 
@@ -120,11 +118,19 @@ pub fn covered() -> Vec<(String, Document, Generated)> {
         .filter(|(name, _)| !PENDING.contains(&name.as_str()))
         .map(|(name, path)| {
             let doc = document(&std::fs::read_to_string(path).unwrap(), &catalog, &tokens);
-            let generated = generate(&doc, &options(&catalog, &tokens, Some(&name))).unwrap();
+            let options = GenerateOptions {
+                shared_tokens: !OWN_TOKENS.contains(&name.as_str()),
+                ..options(&catalog, &tokens, Some(&name))
+            };
+            let generated = generate(&doc, &options).unwrap();
             (name, doc, generated)
         })
         .collect()
 }
+
+/// The body of a screen whose paths are C# keywords: a plain one, one already ending in `_`, a
+/// contextual one, and a list with a keyword member (T105.17).
+pub const KEYWORDS_BODY: &str = r#"<switch id="p" checked="{$.public}" label="P"/><text id="t" text="{$.public_}"/><text id="v" text="{$.value}"/><stack id="st"><each id="e" as="c" in="{$.class}"><text id="n" text="{$c.event}"/></each></stack>"#;
 
 /// A screen around `body`, the shape of every small test document.
 pub fn screen(body: &str) -> String {

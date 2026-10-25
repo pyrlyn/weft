@@ -8,6 +8,7 @@
 
 mod controls;
 mod layout;
+mod surface;
 mod values;
 
 use roxmltree::{Node as Xml, ParsingOptions};
@@ -31,7 +32,9 @@ const DESIGN_TIME: &[&str] = &[
     "http://schemas.openxmlformats.org/markup-compatibility/2006",
 ];
 /// The `Weft.cs` classes whose attached properties carry Weft meaning (design, Markers).
-const HELPERS: &[&str] = &["Props.", "On.", "Slot.", "Each.", "Choice.", "Dialog."];
+const HELPERS: &[&str] = &[
+    "Props.", "On.", "Slot.", "Each.", "Choice.", "Dialog.", "Tilt.",
+];
 
 /// Reads `source`, a XAML page, user control, window or loose panel, without its source comment.
 /// A page the generator wrote, unedited, belongs to `import_winui`.
@@ -234,12 +237,21 @@ impl Reader<'_> {
             match property {
                 // A repeating list's template is its `<each>`, read with the list.
                 "ItemTemplate" if each && owner == "ListView" => {}
+                "Template" if each && owner == "Each" => {}
+                "Template" if owner == "Each" => {
+                    let note = "an `Each.Template` without `Each.As` and a bound `Each.Source` is not read";
+                    self.lose(LossKind::Repetition, parent, note);
+                }
                 "Content" | "Items" | "Flyout" | "ItemTemplate" | "Footer" => {
                     self.through(el, parent, parent_kind, depth, out);
                 }
                 // The grid counts its columns itself; a repeater's stack follows its parent's.
                 "ColumnDefinitions" | "RowDefinitions" if owner == "Grid" => {}
                 "Layout" if owner == "ItemsRepeater" => {}
+                // The page's own copy of the project's tokens, which the props name.
+                "Resources" if owner == "Page" && own_tokens(el) => {}
+                // The tilt, read with the element it turns.
+                "Transform3D" => {}
                 _ => self.lose(LossKind::Props, parent, format!("`{tag}` is not read")),
             }
             return;
@@ -282,9 +294,31 @@ impl Reader<'_> {
             return;
         }
         if is_named(el, "ItemsRepeater")
+            && let Some(layout) = columns_layout(el)
+            && self.repeats(el)
+        {
+            return self.repeated_grid(el, layout, parent, depth, out);
+        }
+        if is_named(el, "ItemsRepeater")
             && let Some(each) = self.each(el, parent, parent_kind, depth)
         {
             out.children.push(Child::Node(Box::new(each)));
+            return;
+        }
+        // A menu's items with an `<each>` among them; the flyout itself is no element.
+        if is_named(el, "MenuFlyout") && self.repeats(el) {
+            let mut inner = Placed::default();
+            self.through(el, parent, parent_kind, depth, &mut inner);
+            if let Some(each) = self.each(el, parent, parent_kind, depth) {
+                place(&mut inner.children, el, each);
+            }
+            out.children.extend(inner.children);
+            for (name, list) in inner.slots {
+                out.slots.entry(name).or_default().extend(list);
+            }
+            return;
+        }
+        if self.wrapped(el, parent, parent_kind, depth, out) {
             return;
         }
         if let Some(loss) = controls::wrapper(el) {
@@ -321,6 +355,7 @@ impl Reader<'_> {
                 .insert("type".into(), Value::String(typed.into()));
         }
         self.attributes(el, &mut node, &here);
+        self.turns(el, &mut node, &here);
         if row {
             // The row's pickers carry its label, `disabled` and bounds; they draw its value.
             for child in elements(el) {
@@ -336,9 +371,32 @@ impl Reader<'_> {
             // A colour button's swatch and flyout only draw the value `Choice.Value` holds.
             self.body(el, &mut node, &here, depth);
         }
-        if tag == "ListView"
+        if matches!(tag, "ListView" | "ComboBox")
             && let Some(each) = self.each(el, &here, kind, depth)
         {
+            place(&mut node.children, el, each);
+        }
+        out.children.push(Child::Node(Box::new(node)));
+    }
+
+    /// A `grid` with `min-column-width` whose only child is an `<each>`: the repeater carries
+    /// the grid's own attributes and its `weft:ColumnsLayout` the columns.
+    fn repeated_grid(
+        &mut self,
+        el: Xml<'_, '_>,
+        layout: Xml<'_, '_>,
+        parent: &str,
+        depth: usize,
+        out: &mut Placed,
+    ) {
+        self.elements += 1;
+        let mut node = Node::new("grid");
+        node.id = Some(self.id(explicit_id(el), "grid", &name_hint(el), parent));
+        let here = element_path(parent, &node);
+        self.attributes(layout, &mut node, &here);
+        self.attributes(el, &mut node, &here);
+        self.turns(el, &mut node, &here);
+        if let Some(each) = self.each(el, &here, "grid", depth) {
             node.children.push(Child::Node(Box::new(each)));
         }
         out.children.push(Child::Node(Box::new(node)));
@@ -346,8 +404,16 @@ impl Reader<'_> {
 
     /// Whether `el` draws an `<each>`: a loop variable and a list to repeat.
     fn repeats(&self, el: Xml<'_, '_>) -> bool {
-        let list = el.attribute("ItemsSource");
-        each_name(el).is_some() && list.and_then(|v| self.list_path(el, v)).is_some()
+        each_name(el).is_some() && self.repeated(el).is_some()
+    }
+
+    /// The path of the list `el` repeats: its `ItemsSource`, or the `Each.Source` of a choice or
+    /// a menu, which cannot bind one.
+    fn repeated(&self, el: Xml<'_, '_>) -> Option<String> {
+        let list = el
+            .attribute("ItemsSource")
+            .or_else(|| helper(el, "Each.Source"));
+        list.and_then(|v| self.list_path(el, v))
     }
 
     /// The `<each>` an `ItemsRepeater` or a `ListView` with `weft:Each.As` draws: its list from
@@ -360,15 +426,9 @@ impl Reader<'_> {
         depth: usize,
     ) -> Option<Node> {
         let name = each_name(el)?;
-        let path = self.list_path(el, el.attribute("ItemsSource")?)?;
+        let path = self.repeated(el)?;
         let mut node = Node::new("each");
-        let explicit = el
-            .attributes()
-            .find(|a| {
-                a.namespace().is_some_and(|n| n.starts_with("using:")) && a.name() == "Each.Id"
-            })
-            .map(|a| a.value());
-        node.id = Some(self.id(explicit, "each", name, parent));
+        node.id = Some(self.id(helper(el, "Each.Id"), "each", name, parent));
         node.props.insert(
             "in".into(),
             Value::Bind {
@@ -381,7 +441,10 @@ impl Reader<'_> {
         let here = element_path(parent, &node);
         self.loops.push(name.to_owned());
         let mut placed = Placed::default();
-        let templates = elements(el).filter(|t| t.tag_name().name().ends_with(".ItemTemplate"));
+        let templates = elements(el).filter(|t| {
+            let name = t.tag_name().name();
+            name.ends_with(".ItemTemplate") || name == "Each.Template"
+        });
         for root in templates.flat_map(elements).flat_map(elements) {
             // The panel the generator gives a template of several elements has the parent's flow.
             let shared = is_named(root, "StackPanel")
@@ -456,6 +519,8 @@ impl Reader<'_> {
                     self.event(el, node, (name, &[event.as_str()]), value, here);
                     continue;
                 }
+                // The helper only keeps the tilt's centre in the middle of the element.
+                Some(_) if name == "Tilt.Centered" => continue,
                 // `<each>` reads its markers and list itself.
                 Some(_) if helper == Some(&"Each.") && self.repeats(el) => continue,
                 Some(_) if helper.is_some() => {
@@ -495,7 +560,8 @@ impl Reader<'_> {
             // An editable ComboBox puts an item's content in its text box, so an option there
             // shows its value and keeps its text, if any, in the tooltip.
             let editable = el
-                .parent_element()
+                .ancestors()
+                .find(|p| is_named(*p, "ComboBox"))
                 .is_some_and(|p| p.attribute("IsEditable") == Some("True"));
             if tag == "ComboBoxItem"
                 && name == "Content"
@@ -679,6 +745,8 @@ impl Reader<'_> {
                     self.inline(child, kind, here, out, depth + 1);
                 }
                 "LineBreak" => out.push(' '),
+                // The tilt, read with the element it turns.
+                _ if tag.strip_suffix(".Transform3D") == Some(el.tag_name().name()) => {}
                 "Span" | "Bold" | "Italic" | "Underline" | "Hyperlink" => {
                     let note = format!("`{tag}` formatting is dropped; its text is kept");
                     self.lose(LossKind::Text, here, note);
@@ -735,6 +803,34 @@ fn elements<'a, 'i>(el: Xml<'a, 'i>) -> impl Iterator<Item = Xml<'a, 'i>> {
     el.children().filter(Xml::is_element)
 }
 
+/// The generator's `weft:ColumnsLayout` of an `ItemsRepeater`.
+fn columns_layout<'a, 'i>(el: Xml<'a, 'i>) -> Option<Xml<'a, 'i>> {
+    let holder = elements(el).find(|c| is_named(*c, "ItemsRepeater.Layout"))?;
+    elements(holder).find(|l| {
+        l.tag_name().name() == "ColumnsLayout"
+            && l.tag_name()
+                .namespace()
+                .is_some_and(|n| n.starts_with("using:"))
+    })
+}
+
+/// Whether a `Page.Resources` holds only `Weft.` resources, in theme dictionaries or not: the
+/// tokens a page generated with its own carries.
+fn own_tokens(el: Xml<'_, '_>) -> bool {
+    el.descendants().filter(|d| d.is_element()).all(|d| {
+        let theme = d
+            .parent_element()
+            .is_some_and(|p| p.tag_name().name() == "ResourceDictionary.ThemeDictionaries");
+        match d.attribute((XAML, "Key")) {
+            Some(key) => key.starts_with("Weft.") || theme,
+            None => matches!(
+                d.tag_name().name(),
+                "Page.Resources" | "ResourceDictionary" | "ResourceDictionary.ThemeDictionaries"
+            ),
+        }
+    })
+}
+
 fn is_named(el: Xml<'_, '_>, name: &str) -> bool {
     el.tag_name().namespace() == Some(PRESENTATION) && el.tag_name().name() == name
 }
@@ -744,18 +840,35 @@ fn explicit_id<'a>(el: Xml<'a, '_>) -> Option<&'a str> {
         .or_else(|| el.attribute((XAML, "Name")))
 }
 
+/// The value of the attached property `name` of a `Weft.cs` class, such as `Each.As`.
+fn helper<'a>(el: Xml<'a, '_>, name: &str) -> Option<&'a str> {
+    el.attributes()
+        .find(|a| a.namespace().is_some_and(|n| n.starts_with("using:")) && a.name() == name)
+        .map(|a| a.value())
+}
+
 /// The loop variable `weft:Each.As` names, when it is one.
 fn each_name<'a>(el: Xml<'a, '_>) -> Option<&'a str> {
-    el.attributes()
-        .find(|a| a.namespace().is_some_and(|n| n.starts_with("using:")) && a.name() == "Each.As")
-        .map(|a| a.value())
-        .filter(|name| is_binding(&format!("${name}")))
+    helper(el, "Each.As").filter(|name| is_binding(&format!("${name}")))
 }
 
 fn slot_name<'a>(el: Xml<'a, '_>) -> Option<&'a str> {
-    el.attributes()
-        .find(|a| a.namespace().is_some_and(|n| n.starts_with("using:")) && a.name() == "Slot.Name")
-        .map(|a| a.value())
+    helper(el, "Slot.Name")
+}
+
+/// `each` among `children`, after the first `weft:Each.At` elements of `el` (0 when it states
+/// none, the rest when it states more).
+fn place(children: &mut Vec<Child>, el: Xml<'_, '_>, each: Node) {
+    let at = helper(el, "Each.At")
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(0);
+    let index = children
+        .iter()
+        .enumerate()
+        .filter(|(_, c)| matches!(c, Child::Node(_)))
+        .nth(at)
+        .map_or(children.len(), |(i, _)| i);
+    children.insert(index, Child::Node(Box::new(each)));
 }
 
 /// The text a generated id is named after: the first literal name, header, content or text.
