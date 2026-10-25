@@ -1,8 +1,8 @@
-//! The built module end to end: `weft.wasm`, as `the coding agent plugin install plugins/cox` takes it, loaded
-//! with the extism engine of the coding agent's plugin host (no WASI, a memory cap, per-call deadlines) and
-//! driven through `agent_init` and `agent_tool_call` with the JSON the coding agent sends. `moon run
-//! agent-plugin:test` builds the module first; a plain `cargo test` needs `moon run
-//! agent-plugin:build` once.
+//! The built module end to end: `weft.wasm`, as `cox plugin install plugins/cox` takes it, loaded
+//! with the extism engine of cox's plugin host (no WASI, a memory cap, per-call deadlines) and
+//! driven through `cox_init` and `cox_tool_call` with the JSON cox sends. `moon run
+//! cox-plugin:test` builds the module first; a plain `cargo test` needs `moon run
+//! cox-plugin:build` once.
 
 // Helpers of a test file fail the test the same way a #[test] body does.
 #![allow(clippy::unwrap_used, clippy::panic)]
@@ -17,7 +17,7 @@ use wasm_plugin_host::{HostEnv, Lane, Limits, Options, PluginError, PluginHost};
 
 const OPTIONS: Options = Options::new("cox_init", "weft-e2e");
 
-/// The host side of the one `the coding agent:host/v1` import the module has, `agent_notify`, which it calls
+/// The host side of the one `cox:host/v1` import the module has, `cox_notify`, which it calls
 /// only for a project's warnings: accepted and dropped.
 struct Env;
 
@@ -47,7 +47,7 @@ fn load() -> PluginHost {
     let path = concat!(env!("CARGO_MANIFEST_DIR"), "/weft.wasm");
     let wasm = std::fs::read(path)
         .unwrap_or_else(|e| panic!("{path}: {e}; run `moon run cox-plugin:build` first"));
-    // The limits plugin.toml asks for, as the coding agent would apply them.
+    // The limits plugin.toml asks for, as cox would apply them.
     let limits = Limits {
         memory_mib: Some(64),
         call_ms: Some(10_000),

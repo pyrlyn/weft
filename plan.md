@@ -126,28 +126,28 @@ T69.2a, the first slice of milestone 2, is done (`done.md`): `generate_embedded`
 
 Milestone 1 is done (T69.1, `done.md`). The next milestone is the canvas.
 
-### T106. Weft plugin for the coding agent
+### T106. Weft plugin for cox
 
-The creator asked for a plugin for the coding agent (`~/GitHub/listepo/apps/cox`, https://github.com/pyrlyn), written in Rust, and allowed extending the coding agent where its plugin API falls short. A the coding agent plugin is a WebAssembly module (extism guest, `wasm32-unknown-unknown`) with a `plugin.toml` manifest, written with the coding agent's Rust SDK (`agent-plugin-sdk`, `plugins/sdk` in the coding agent); its `init` returns the model-callable tools (`ToolSpec`s), served through `agent_tool_call`. The plugin gives the coding agent agent the Weft tools the MCP server gives other hosts (same names, inputs and outputs) by calling the Rust crates directly: no Node, and no second copy of the behaviour. Later parts give the coding agent desktop app a Design tab, like Claude Design: the agent's screens rendered as real UI that a person can look at and select from.
+The creator asked for a plugin for cox (`~/GitHub/listepo/apps/cox`, https://github.com/pyrlyn/cox), written in Rust, and allowed extending cox where its plugin API falls short. A cox plugin is a WebAssembly module (extism guest, `wasm32-unknown-unknown`) with a `plugin.toml` manifest, written with cox's Rust SDK (`cox-plugin-sdk`, `plugins/sdk` in cox); its `init` returns the model-callable tools (`ToolSpec`s), served through `cox_tool_call`. The plugin gives the cox agent the Weft tools the MCP server gives other hosts (same names, inputs and outputs) by calling the Rust crates directly: no Node, and no second copy of the behaviour. Later parts give the cox desktop app a Design tab, like Claude Design: the agent's screens rendered as real UI that a person can look at and select from.
 
 Done when T106.1–T106.8 are done. Sub-tasks, in order (each within the task size rule):
 
 - T106.1: the MCP tool logic in Rust (`weft-binding`).
 - T106.2: the TypeScript MCP server on that Rust logic.
-- T106.3: `plugins/cox`, the coding agent plugin with the tools.
-- T106.4: the accessibility snapshot of `weft_render` in Rust, so the coding agent gets `weft_render` too.
-- T106.5: skills in the coding agent: a coding agent extension for plugin-carried skills, and the Weft skills in the plugin.
-- T106.6: Design tab, design: these cards and a coding agent design proposal (`docs/design/` in the coding agent), before code.
-- T106.7: Design tab, the coding agent side: the plugin-API extension and the desktop host (the coding agent tasks).
+- T106.3: `plugins/cox`, the cox plugin with the tools.
+- T106.4: the accessibility snapshot of `weft_render` in Rust, so cox gets `weft_render` too.
+- T106.5: skills in cox: a cox extension for plugin-carried skills, and the Weft skills in the plugin.
+- T106.6: Design tab, design: these cards and a cox design proposal (`docs/design/` in cox), before code.
+- T106.7: Design tab, cox side: the plugin-API extension and the desktop host (cox tasks).
 - T106.8: Design tab, Weft side: the plugin renders the screens, keeps the tab live and passes the selection to the agent.
 
-What exists (checked on origin/main): the MCP server is `packages/mcp` (nine tools: `weft_primer`, `weft_capabilities`, `weft_catalog`, `weft_schema`, `weft_validate`, `weft_format`, `weft_patch`, `weft_render`, `weft_context`), bundled into the Claude Code, Cursor and Open Design plugins by `plugins/shared`. Its checks already run on the Rust core through `@weft/core` and `@weft/catalog`, but the tool layer itself (primer text, limits, diagnostics truncation, project scoping, the capabilities shape, the catalog index, context filtering, the tool descriptions) is TypeScript, and `weft_render`'s accessibility tree and page come from `@weft/render-react` (TypeScript only). `crates/weft-binding` holds the JSON-text functions both engines call; `crates/weft-web` has the static HTML/CSS generator (`to_html`). The coding agent has no way for a plugin to carry skills (`plugin.toml` has `[[agents]]` and `[[mcp]]`, no skills) and its desktop plugin API is text widgets only (PL§15.4 lists plugin web views as "never", marked open in A134), so T106.5 and T106.7 extend the coding agent.
+What exists (checked on origin/main): the MCP server is `packages/mcp` (nine tools: `weft_primer`, `weft_capabilities`, `weft_catalog`, `weft_schema`, `weft_validate`, `weft_format`, `weft_patch`, `weft_render`, `weft_context`), bundled into the Claude Code, Cursor and Open Design plugins by `plugins/shared`. Its checks already run on the Rust core through `@weft/core` and `@weft/catalog`, but the tool layer itself (primer text, limits, diagnostics truncation, project scoping, the capabilities shape, the catalog index, context filtering, the tool descriptions) is TypeScript, and `weft_render`'s accessibility tree and page come from `@weft/render-react` (TypeScript only). `crates/weft-binding` holds the JSON-text functions both engines call; `crates/weft-web` has the static HTML/CSS generator (`to_html`). cox has no way for a plugin to carry skills (`plugin.toml` has `[[agents]]` and `[[mcp]]`, no skills) and its desktop plugin API is text widgets only (PL§15.4 lists plugin web views as "never", marked open in A134), so T106.5 and T106.7 extend cox.
 
-### T106.7. Design tab: the coding agent side
+### T106.7. Design tab: cox side
 
-The coding agent tasks the T106.6 proposal defines, as built: T33.47.1–T33.47.10 in pyrlyn/cox (`docs/design/plugin-canvas.md`, A156, branch `t33.47-plugin-canvas`); the coding agent's A157 split T33.47.8 into T33.47.8.1–T33.47.8.10, one layer each, and added T33.47.10, a fix. They cover the plugin-API types, manifest key and grant line, the host calls and SDK arms, the `agent-app` state, wire and FFI, the isolated `CanvasPage`, the pane, its shortcut and palette rows, and the user docs. Done when their checks pass in the coding agent and the branch is pushed. The Weft plugin's `agent-plugin-sdk` pin moves to that branch in T106.8.
+The cox tasks the T106.6 proposal defines, as built: T33.47.1–T33.47.10 in pyrlyn/cox (`docs/design/plugin-canvas.md`, A156, branch `t33.47-plugin-canvas`); cox's A157 split T33.47.8 into T33.47.8.1–T33.47.8.10, one layer each, and added T33.47.10, a fix. They cover the plugin-API types, manifest key and grant line, the host calls and SDK arms, the `cox-app` state, wire and FFI, the isolated `CanvasPage`, the pane, its shortcut and palette rows, and the user docs. Done when their checks pass in cox and the branch is pushed. The Weft plugin's `cox-plugin-sdk` pin moves to that branch in T106.8.
 
-Status: every the coding agent card is done and pushed (branch head `fd35f0d0`) but T33.47.8's last checks: by hand, ⌘⇧D and the palette row toggle the pane, two frames show, and a click adds a chip that a second click replaces; and the falsifier 3 measurement in Instruments. Both need a person at the app, so they are with the creator.
+Status: every cox card is done and pushed (branch head `fd35f0d0`) but T33.47.8's last checks: by hand, ⌘⇧D and the palette row toggle the pane, two frames show, and a click adds a chip that a second click replaces; and the falsifier 3 measurement in Instruments. Both need a person at the app, so they are with the creator.
 
 ### T903. macOS studio UI test: Save As writes nothing locally
 

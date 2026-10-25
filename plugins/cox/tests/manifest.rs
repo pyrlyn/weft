@@ -1,6 +1,6 @@
-//! `plugin.toml` read into the coding agent's own manifest type, the type the coding agent's `docs/plugin.schema.json` is
-//! generated from: unknown keys are denied at every level and `validate` runs the coding agent's own checks,
-//! so the manifest is checked by the pinned the coding agent revision without vendoring the schema or reading
+//! `plugin.toml` read into cox's own manifest type, the type cox's `docs/plugin.schema.json` is
+//! generated from: unknown keys are denied at every level and `validate` runs cox's own checks,
+//! so the manifest is checked by the pinned cox revision without vendoring the schema or reading
 //! outside this repository.
 
 // Helpers of a test file fail the test the same way a #[test] body does.
@@ -47,7 +47,7 @@ fn it_asks_for_nothing_but_tools_and_the_canvas() {
     assert_eq!(manifest().capabilities, expected);
 }
 
-/// The coding agent loads a skill only when its folder holds a `SKILL.md` whose `name` is the folder's and the
+/// cox loads a skill only when its folder holds a `SKILL.md` whose `name` is the folder's and the
 /// declared one, so a renamed folder or file would drop the guide with nothing but a notice.
 #[test]
 fn every_declared_skill_folder_holds_its_skill() {

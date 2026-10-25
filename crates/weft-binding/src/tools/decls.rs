@@ -1,5 +1,5 @@
 //! What each tool tells a model before it is called: its name, title, description, JSON input
-//! schema and hints, and the primer. One copy for every host (the MCP server, the coding agent plugin), so
+//! schema and hints, and the primer. One copy for every host (the MCP server, the cox plugin), so
 //! the words a model reads cannot drift between them. Limits and settings appear in the texts
 //! because a model that knows them stays inside them.
 

@@ -97,7 +97,7 @@ describe("the declared inputs of the Rust builds", () => {
     }
   ).tasks;
 
-  // `--all-features` joins the builds with and without the `web` feature of weft-wasm. The coding agent
+  // `--all-features` joins the builds with and without the `web` feature of weft-wasm. The cox
   // plugin is a Cargo workspace of its own on weft-binding; its default features build less than
   // this closure, so its tasks list a little more than they read, never less.
   for (const [project, target, root, lock] of [
