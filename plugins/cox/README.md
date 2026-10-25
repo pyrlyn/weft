@@ -22,7 +22,7 @@ The pane needs its own grant line, `desktop.canvas`, which the coding agent asks
 
 ```sh
 mise exec -- moon run agent-plugin:build   # writes plugins/agent/weft.wasm
-cox plugin install plugins/cox
+The coding agent plugin install plugins/cox
 ```
 
 The first build fetches pyrlyn/cox for the SDK (a git dependency pinned to a commit on the coding agent's unmerged `t33.47-plugin-canvas` branch until it reaches the coding agent main: about 560 MB of history in `~/.cargo/git`). The module is about 1.4 MB.
