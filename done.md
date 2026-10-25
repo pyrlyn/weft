@@ -1,5 +1,15 @@
 # Done
 
+### T69.3h. Undo and redo of an applied patch
+
+Part of T69 milestone 3, beside T69.3c (apply a patch and the dirty flag). `Session` records each applied change and can return to it. Undo stores documents, not inverse patches.
+
+`Session::apply` runs the list through `Editor::apply`. When the canonical markup changes, the previous document is pushed on the undo stack and the redo stack is cleared. A list the editor rejects leaves both stacks as they were. `undo` and `redo` restore a stored document and refresh diagnostics; `dirty` is true when the restored markup differs from the canonical markup captured at `open`, and false when it is that markup.
+
+Result: `crates/weft-studio/tests/history.rs`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 3
+Check: `cargo test -p weft-studio`.
+
 ### T69.3c. Apply a patch and the dirty flag
 
 Part of T69 milestone 3, beside T69.3b (layers and inspect). `Editor` applies a SPEC §7 patch list and records whether the canonical markup changed. Undo is not included: there is no inverse-patch helper and no undo stack.
