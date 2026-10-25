@@ -4,4 +4,3 @@
 - T69.1. Editor skeleton
 - T106. Weft plugin for the coding agent
 - T106.7. Design tab: the coding agent side
-- T903. macOS studio UI test: Save As writes nothing locally

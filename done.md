@@ -2245,3 +2245,18 @@ Result: T69.1a–T69.1e are done (`done.md`). The document core opens every corp
 
 Model: Cursor / Grok 4.7 · Status: done · Priority: P2 · Complexity: 4
 Check: the checks of T69.1a–T69.1e.
+
+### T903. macOS studio UI test: Save As writes nothing locally
+
+Seen by both loop workers: locally, the macOS `studio:test` XCUITest fails with "Save As wrote nothing", while the same test passes in CI. Find the cause (likely focus or timing around the save panel, as T902 found for Windows) and fix it, starting from a reproduction. Done when the test passes locally several runs in a row and stays green in CI. Needs a Mac with Xcode, so it cannot run in a Linux cloud session.
+
+Execution plan:
+
+1. Reproduce: XcodeGen, then `xcodebuild test` of `studio/macos` with a result bundle, and read the failing run's screenshots and the app's state at ⌘⇧S.
+2. Find the cause in `studio/macos/App` or `studio/macos/UITests` and fix it at that layer, without a longer timeout as the fix.
+3. Verify: the UI test passes locally five runs in a row, then `moon run studio:test` and CI on the PR.
+
+Result: the test, not the app. `typeKey("s", modifierFlags: [.command, .shift])` types the character `s` in the current input source, and on the creator's Mac that is Russian, which has no `s` key, so ⌘⇧S never reached the File menu and nothing was saved; CI runs with the US layout. The failing run's UI snapshot showed the `Save As…` item enabled and the window still titled `screen.weft`, and the system's selected input source was Russian. The UI test now opens File and clicks `Save As…`, which no layout changes. Before the fix the test failed locally; after it, `xcodebuild test` of `studio/macos` passed five runs in a row on the same Mac with the Russian layout, and the macOS job stays green on the pull request.
+
+Model: Claude Code / claude-opus-5-5 · Status: done · Priority: P2 · Complexity: 2
+Check: `moon run studio:test` on a Mac with Xcode, under any keyboard layout.

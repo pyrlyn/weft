@@ -11,7 +11,6 @@ An open, agent-friendly UI description format — strict markup for models, cano
 | T69 | todo | P2 | 5 | 0% | |
 | T106 | in progress | P2 | 5 | 95% | Claude Code / claude-opus-5-5 |
 | T106.7 | in progress | P2 | 4 | 95% | Claude Code / claude-opus-5-5 |
-| T903 | todo | P2 | 2 | 0% | |
 
 ### T8. Evaluation
 
@@ -152,8 +151,3 @@ What exists (checked on origin/main): the MCP server is `packages/mcp` (nine too
 The coding agent tasks the T106.6 proposal defines, as built: T33.47.1–T33.47.10 in pyrlyn/cox (`docs/design/plugin-canvas.md`, A156, branch `t33.47-plugin-canvas`); the coding agent's A157 split T33.47.8 into T33.47.8.1–T33.47.8.10, one layer each, and added T33.47.10, a fix. They cover the plugin-API types, manifest key and grant line, the host calls and SDK arms, the `cox-app` state, wire and FFI, the isolated `CanvasPage`, the pane, its shortcut and palette rows, and the user docs. Done when their checks pass in the coding agent and the branch is pushed. The Weft plugin's `cox-plugin-sdk` pin moves to that branch in T106.8.
 
 Status: every coding agent card is done and pushed (branch head `fd35f0d0`) but T33.47.8's last checks: by hand, ⌘⇧D and the palette row toggle the pane, two frames show, and a click adds a chip that a second click replaces; and the falsifier 3 measurement in Instruments. Both need a person at the app, so they are with the creator.
-
-### T903. macOS studio UI test: Save As writes nothing locally
-
-Seen by both loop workers: locally, the macOS `studio:test` XCUITest fails with "Save As wrote nothing", while the same test passes in CI. Find the cause (likely focus or timing around the save panel, as T902 found for Windows) and fix it, starting from a reproduction. Done when the test passes locally several runs in a row and stays green in CI. Needs a Mac with Xcode, so it cannot run in a Linux cloud session.
-
