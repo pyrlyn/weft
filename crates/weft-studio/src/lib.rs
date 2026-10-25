@@ -24,7 +24,12 @@ use weft_core::{
 };
 use weft_slint::{GenerateError, GenerateOptions, MAX_SOURCE_LENGTH, generate};
 
+mod bind;
+mod history;
+mod insert;
 mod layers;
+mod relocate;
+mod remove;
 
 pub use layers::{Inspection, Layer};
 
