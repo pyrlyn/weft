@@ -1,5 +1,24 @@
 # Done
 
+### T69.3c. Apply a patch and the dirty flag
+
+Part of T69 milestone 3, beside T69.3b (layers and inspect). `Editor` applies a SPEC §7 patch list and records whether the canonical markup changed. Undo is not included: there is no inverse-patch helper and no undo stack.
+
+`Editor::apply` runs the list through `weft_core::apply_patches` in lenient mode with this catalog, these token types and the project's actions. A list the core rejects leaves the document, the diagnostics and `dirty` as they were. A list the core accepts stores the new document and the revalidated diagnostics, warnings included. `dirty` becomes true only when the canonical markup changed, and a successful `save` clears it. A failed save leaves `dirty` as it was.
+
+Result: `crates/weft-studio/tests/edit.rs`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 3
+Check: `cargo test -p weft-studio`.
+
+### T69.2c. Ruler ticks
+
+Part of T69 milestone 2, beside T69.2b (the canvas model). Frames, pan, zoom, hit-testing and keyboard focus are already there. A ruler is session math on that view: the marks along one edge of the viewport. It does not read frames, and a save still writes only the screen.
+
+The gap between ticks is at least 48 screen pixels. The step is the smallest value of the form 1, 2 or 5 times a power of ten such that `step * zoom` is at least 48. The ruler emits every multiple of that step whose screen position, `canvas * zoom + pan`, lies in `[0, span]`, from the low canvas coordinate to the high one. A whole-number label has no decimal point (`0`, `50`, `-100`). A span that is not finite, or not greater than zero, yields no ticks. The horizontal ruler reads `pan_x`; the vertical ruler reads `pan_y`.
+
+Result: `Canvas::ruler`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 2
+Check: `cargo test -p weft-studio`.
 ### T69.2b. Canvas model
 
 Part of T69 milestone 2, beside T69.2a (the embedded Slint component). The document core holds one screen. The canvas holds several, with a view and a selection, and still saves each screen as canonical markup. Done when frames, pan, zoom, frame hit-testing, element selection and keyboard movement are covered without a Slint crate.

@@ -6,7 +6,7 @@
 
 mod canvas;
 
-pub use canvas::{Canvas, Focus, FrameGeom, MAX_ZOOM, MIN_ZOOM};
+pub use canvas::{Axis, Canvas, Focus, FrameGeom, MAX_ZOOM, MIN_ZOOM, Tick};
 
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -18,7 +18,10 @@ use weft_catalog::{
     CatalogError, DEFAULT_TOKENS_JSON, Project, ProjectFileError, Token, WriteError, core_catalog,
     find_project, load_project_file, load_tokens, read_project_member, token_types, write_atomic,
 };
-use weft_core::{Catalog, Diagnostic, Document, Mode, ParseOptions, parse, parse_json, serialize};
+use weft_core::{
+    ApplyOptions, Catalog, Diagnostic, Document, Mode, ParseOptions, apply_patches, parse,
+    parse_json, serialize,
+};
 use weft_slint::{GenerateError, GenerateOptions, MAX_SOURCE_LENGTH, generate};
 
 mod layers;
@@ -55,8 +58,8 @@ pub enum EditorError {
     Embedded(#[from] CatalogError),
 }
 
-/// What a shell shows: the window title, the screen and the problems. `dirty` stays false until
-/// editing arrives (T69 milestone 3).
+/// What a shell shows: the window title, the screen and the problems. `dirty` is true after a
+/// patch changed the canonical markup, and false again after a successful save.
 #[derive(Debug, Serialize)]
 pub struct State {
     pub path: PathBuf,
@@ -85,6 +88,7 @@ pub struct Editor {
     path: PathBuf,
     document: Document,
     diagnostics: Vec<Diagnostic>,
+    dirty: bool,
     project: Option<OpenProject>,
     catalog: Catalog,
     tokens: IndexMap<String, Token>,
@@ -142,6 +146,7 @@ impl Editor {
             path: path.to_owned(),
             document,
             diagnostics: parsed.diagnostics,
+            dirty: false,
             project,
             catalog,
             tokens,
@@ -149,11 +154,46 @@ impl Editor {
     }
 
     /// Writes the canonical markup atomically to `path`, or to the current path without one;
-    /// a save elsewhere makes that the document's path. A failed save changes nothing.
+    /// a save elsewhere makes that the document's path. A successful save clears `dirty`.
+    /// A failed save changes nothing.
     pub fn save(&mut self, path: Option<&Path>) -> Result<(), EditorError> {
         let target = path.unwrap_or(&self.path).to_owned();
         write_atomic(&target, &serialize(&self.document))?;
         self.path = target;
+        self.dirty = false;
+        Ok(())
+    }
+
+    /// Applies a SPEC §7 patch list through `weft_core::apply_patches`.
+    /// A list the core rejects leaves the document, the diagnostics and `dirty` as they were.
+    /// A list the core accepts replaces the document and refreshes diagnostics the same way
+    /// `open` validates (lenient mode, this catalog, these token types, the project's actions).
+    /// `dirty` becomes true only when the canonical markup changed.
+    pub fn apply(&mut self, patches: &Json) -> Result<(), Vec<Diagnostic>> {
+        let types = token_types(&self.tokens);
+        let applied = apply_patches(
+            &self.document,
+            patches,
+            &ApplyOptions {
+                catalog: &self.catalog,
+                mode: Mode::Lenient,
+                tokens: Some(&types),
+                actions: self
+                    .project
+                    .as_ref()
+                    .and_then(|open| open.project.actions.as_deref()),
+                author: None,
+                read_only_context: false,
+            },
+        );
+        let Some(document) = applied.document else {
+            return Err(applied.diagnostics);
+        };
+        if serialize(&document) != serialize(&self.document) {
+            self.dirty = true;
+        }
+        self.document = document;
+        self.diagnostics = applied.diagnostics;
         Ok(())
     }
 
@@ -170,7 +210,7 @@ impl Editor {
                 .unwrap_or_default(),
             path: self.path.clone(),
             screen: self.document.root.id.clone(),
-            dirty: false,
+            dirty: self.dirty,
             diagnostics: self.diagnostics.clone(),
             project: self.project.as_ref().map(|open| open.file.clone()),
             project_diagnostics: self
