@@ -1,4 +1,4 @@
-# The Weft plugin for cox. A workspace of its own, outside the root `members = ["crates/*"]`, so
+# The Weft plugin for the coding agent. A workspace of its own, outside the root `members = ["crates/*"]`, so
 # the root `cargo nextest run --workspace` and clippy never fetch pyrlyn/cox or build guest code.
 [workspace]
 resolver = "3"
@@ -33,9 +33,9 @@ weft-catalog = { path = "../../crates/weft-catalog" }
 weft-web = { path = "../../crates/weft-web" }
 
 [dev-dependencies]
-# Parses plugin.toml into cox's own manifest type in tests/manifest.rs.
+# Parses plugin.toml into the coding agent's own manifest type in tests/manifest.rs.
 toml = "1"
-# The shared extism engine of cox's plugin host (packages/crates); tests/e2e.rs loads the module
+# The shared extism engine of the coding agent's plugin host (packages/crates); tests/e2e.rs loads the module
 # with it. Not on crates.io yet, so pinned to a pyrlyn/crates commit.
 wasm-plugin-host = { git = "https://github.com/pyrlyn/crates", rev = "7fc02456ec732e6b742ffb8245ad78d5318e7b9d" }
 
@@ -50,7 +50,7 @@ todo = "deny"
 unimplemented = "deny"
 
 [profile.release]
-# The module is downloaded into every cox session that loads it.
+# The module is downloaded into every coding agent session that loads it.
 opt-level = "s"
 lto = true
 codegen-units = 1

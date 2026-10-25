@@ -2,6 +2,6 @@
 - T14. Figma round trip and plugin
 - T69. Figma-like desktop design editor
 - T69.1. Editor skeleton
-- T106. Weft plugin for cox
-- T106.7. Design tab: cox side
+- T106. Weft plugin for the coding agent
+- T106.7. Design tab: the coding agent side
 - T903. macOS studio UI test: Save As writes nothing locally
