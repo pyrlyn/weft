@@ -1,6 +1,6 @@
 // The accessibility tree a document declares (SPEC §9), as the reference renderer exposes it, in
 // the shape of a Playwright aria snapshot. Built by the Rust core (crates/weft-core/src/aria), so the
-// MCP tools, the cox plugin and the renderer's own tests read one tree.
+// MCP tools, the coding agent plugin and the renderer's own tests read one tree.
 import type { Catalog, Document } from "./model.ts";
 import { catalogHandle, toJson, wasm } from "./wasm.ts";
 

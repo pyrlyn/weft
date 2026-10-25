@@ -1,7 +1,7 @@
 // The accessibility tree a document declares (SPEC §9), in the shape of a Playwright aria
 // snapshot, plus a parser for that snapshot and a comparison that lists the differences. The tree,
 // its normal form and its YAML come from the Rust core (`ariaTree` of `@weft/core`), which the MCP
-// tools and the cox plugin share; the renderer's tests check that tree against the DOM.
+// tools and the coding agent plugin share; the renderer's tests check that tree against the DOM.
 import { ariaTree, normalizeAria, type AriaNode, type Catalog, type Document } from "@weft/core";
 
 export { formatAriaSnapshot, normalizeAria } from "@weft/core";

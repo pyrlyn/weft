@@ -20,7 +20,7 @@ export type Context = {
 
 export type Limits = Readonly<Record<LimitName, number>>;
 
-// The tools, their texts and their bounds live in crates/weft-binding (`tools`), which the cox
+// The tools, their texts and their bounds live in crates/weft-binding (`tools`), which the coding agent
 // plugin calls too; these are read from there so the server keeps no copy.
 const constants = toolHost({ catalog: coreCatalog }).constants();
 

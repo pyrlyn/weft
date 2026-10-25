@@ -1,5 +1,5 @@
 //! A call's arguments, checked against what its declaration promises. The MCP SDK checks them
-//! before a call reaches Rust; cox does not, and arguments are model output, so the same bounds
+//! before a call reaches Rust; the coding agent does not, and arguments are model output, so the same bounds
 //! are enforced here. Unknown members are ignored, as the SDK's object schemas ignore them.
 
 use serde_json::{Map, Value as Json};

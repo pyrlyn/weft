@@ -1,5 +1,5 @@
 //! The Weft agent tools (`weft_primer` … `weft_context`) as one Rust API that every host calls:
-//! the MCP server of `packages/mcp` and the cox plugin of `plugins/cox`. A host lists `decls`,
+//! the MCP server of `packages/mcp` and the coding agent plugin of `plugins/cox`. A host lists `decls`,
 //! passes a call's name and argument JSON to `ToolHost::call`, and sends back the `Outcome`, so
 //! the texts, limits and checks a model meets are the same everywhere (plan.md T106).
 
@@ -69,7 +69,7 @@ impl ToolHost {
         ToolHost::new(Context::of_catalog(core_catalog()?), settings)
     }
 
-    /// A host started with a project (`weft-mcp --project`, a cox `[plugins.weft]` table): its
+    /// A host started with a project (`weft-mcp --project`, a coding agent `[plugins.weft]` table): its
     /// resources, and the `validate.mode`, `mcp.limits` and `mcp.context` settings (SPEC §10.6).
     /// Members hold their files' JSON content, as in the tools' `project` argument. Returns the
     /// project's warnings beside the host.

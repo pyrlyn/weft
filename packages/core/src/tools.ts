@@ -1,5 +1,5 @@
 // The Weft agent tools of crates/weft-binding (`tools`), which the MCP server of @weft/mcp serves
-// and the cox plugin calls natively, so both hosts answer with the same texts and checks. In the
+// and the coding agent plugin calls natively, so both hosts answer with the same texts and checks. In the
 // web module, like `./document-schema.ts`: `@weft/core` keeps loading only the core module.
 import type { DataSchema } from "./data.ts";
 import type { Catalog } from "./model.ts";

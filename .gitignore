@@ -11,7 +11,7 @@ target/
 packages/core/wasm/
 packages/core/wasm-web/
 packages/core/native/
-# The cox plugin module, built by `moon run cox-plugin:build`.
+# The coding agent plugin module, built by `moon run agent-plugin:build`.
 plugins/cox/weft.wasm
 # The Xcode plugins: the artifact bundle is built locally, and Swift and Xcode write their own
 # build folders and generated projects.

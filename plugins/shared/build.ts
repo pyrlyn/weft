@@ -31,8 +31,8 @@ export const specCopy = (name: PluginName): string =>
   join(pluginDir(name), PLUGINS[name].skill, "AGENT-SPEC.md");
 
 /**
- * Plugins that carry the guide but no bundle: the cox plugin is a WebAssembly module with no
- * Node, and cox copies only its package folder, so its spec skill needs a copy of its own too.
+ * Plugins that carry the guide but no bundle: the coding agent plugin is a WebAssembly module with no
+ * Node, and the coding agent copies only its package folder, so its spec skill needs a copy of its own too.
  */
 export const SPEC_ONLY = [join(REPOSITORY, "plugins/cox/skills/weft-spec/AGENT-SPEC.md")];
 

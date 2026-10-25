@@ -1,9 +1,9 @@
-//! The Design tab (plan.md T106.8; cox `docs/design/plugin-canvas.md`): the last markup the tools
+//! The Design tab (plan.md T106.8; the coding agent `docs/design/plugin-canvas.md`): the last markup the tools
 //! saw for each screen, drawn as static pages whose elements carry their diagnostic paths, and a
 //! click on one turned into a short attachment the person may send with their next message.
 //!
-//! cox asks for the frames again after each of this plugin's tools finishes, so a tool call only
-//! has to remember what it saw; nothing here calls `cox_redraw`.
+//! The coding agent asks for the frames again after each of this plugin's tools finishes, so a tool call only
+//! has to remember what it saw; nothing here calls `agent_redraw`.
 
 use cox_plugin_sdk::{CanvasAttach, CanvasDecl, CanvasOut, Frame, MAX_CANVAS_FRAMES, Value};
 use serde_json::json;
@@ -17,7 +17,7 @@ pub const SELECT_ATTR: &str = "data-weft-path";
 /// The longest markup line an attachment quotes, in characters, so it stays near 1 KiB.
 const LINE_CHARS: usize = 400;
 
-/// The pane cox shows when the person grants `desktop.canvas`.
+/// The pane the coding agent shows when the person grants `desktop.canvas`.
 pub fn decl() -> CanvasDecl {
     CanvasDecl {
         title: "Weft".into(),
@@ -137,7 +137,7 @@ impl Canvas {
     }
 
     /// What a click on `path` in `frame` tells the agent: the screen, the path, and the element's
-    /// markup line when the path names an element of the markup as written. cox checked the
+    /// markup line when the path names an element of the markup as written. The coding agent checked the
     /// value's length and characters; it is only compared here and quoted as text.
     pub fn select(&self, frame: &str, path: &str) -> Option<CanvasAttach> {
         let screen = self.screens.iter().find(|s| s.frame == frame)?;

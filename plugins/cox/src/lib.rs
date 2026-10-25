@@ -1,8 +1,8 @@
-//! `weft-cox`: the Weft agent tools as a cox plugin (plan.md T106.3). The tools are the ones the
+//! `weft-cox`: the Weft agent tools as a coding agent plugin (plan.md T106.3). The tools are the ones the
 //! MCP server gives other hosts, from the same Rust (`weft_binding::tools`), so their texts, limits
-//! and checks cannot drift between hosts. cox names them `wasm__weft__<tool>`.
+//! and checks cannot drift between hosts. The coding agent names them `wasm__weft__<tool>`.
 //!
-//! On the desktop it also fills cox's canvas pane with the screens its tools saw (`canvas`).
+//! On the desktop it also fills the coding agent's canvas pane with the screens its tools saw (`canvas`).
 //!
 //! The decisions are plain functions so the tests run them on the host; the exports, which need
 //! extism's memory, build only for `wasm32`.
@@ -42,12 +42,12 @@ pub struct Weft {
 impl Weft {
     /// Reads `InitIn.config`: a `weft.json` whose members hold their files' content (catalog,
     /// tokens, actions, data, fragments) plus its tool settings (`validate.mode`, `mcp.limits`,
-    /// `mcp.context`). cox sends `{}` when the table is absent, which is the core catalog alone.
+    /// `mcp.context`). The coding agent sends `{}` when the table is absent, which is the core catalog alone.
     /// The plugin has no file access, so inline content is the only way to give it a project.
-    /// Returns the project's warnings beside it; an `Err` is the text cox shows when init fails.
+    /// Returns the project's warnings beside it; an `Err` is the text the coding agent shows when init fails.
     pub fn from_config(config: &Value) -> Result<(Weft, Vec<String>), String> {
         let empty = json!({});
-        // A table cox could not read reaches the plugin as null, which means no project too.
+        // A table the coding agent could not read reaches the plugin as null, which means no project too.
         let config = if config.is_null() { &empty } else { config };
         match ToolHost::from_project(config) {
             Ok((host, warnings)) => {
@@ -62,8 +62,8 @@ impl Weft {
         }
     }
 
-    /// One `ToolSpec` per tool. Every tool only reads its arguments, and cox runs the calls into
-    /// one plugin one at a time, so each is `read_only` and `exclusive`; cox defers plugin tools
+    /// One `ToolSpec` per tool. Every tool only reads its arguments, and the coding agent runs the calls into
+    /// one plugin one at a time, so each is `read_only` and `exclusive`; the coding agent defers plugin tools
     /// behind `tool_search`.
     pub fn specs(&self) -> Vec<Value> {
         self.host
@@ -87,7 +87,7 @@ impl Weft {
             .collect()
     }
 
-    /// Turns the canvas on when cox drives the desktop app and the person granted
+    /// Turns the canvas on when the coding agent drives the desktop app and the person granted
     /// `desktop.canvas` (`InitIn.surface`, `InitIn.granted`), so no other surface gets a pane it
     /// would only drop with a notice.
     pub fn open_canvas(&mut self, surface: Option<Surface>, granted: &Value) {
@@ -107,7 +107,7 @@ impl Weft {
         }
     }
 
-    /// `cox_canvas`: the screens' pages.
+    /// `agent_canvas`: the screens' pages.
     pub fn frames(&mut self) -> CanvasOut {
         match &mut self.canvas {
             Some(canvas) => canvas.frames(&self.host),
@@ -115,7 +115,7 @@ impl Weft {
         }
     }
 
-    /// `cox_canvas_select`: what a click adds to the composer.
+    /// `agent_canvas_select`: what a click adds to the composer.
     pub fn select(&self, selection: &CanvasSelect) -> Option<CanvasAttach> {
         let canvas = self.canvas.as_ref()?;
         canvas.select(&selection.frame, &selection.value)
@@ -128,7 +128,7 @@ impl Weft {
         if !tool_names().contains(&call.name) {
             return output(&format!("Unknown tool: {}.", call.name), true);
         }
-        // cox hands over the model's input as parsed JSON; the host reads it as text, as an MCP
+        // The coding agent hands over the model's input as parsed JSON; the host reads it as text, as an MCP
         // call's arguments, so both hosts run the same checks on it.
         let args = call.input.to_string();
         let outcome = self.host.call(&call.name, &args);
@@ -204,7 +204,7 @@ mod guest {
 
     use super::Weft;
 
-    // cox keeps one instance per plugin and session and calls it one export at a time; the lock
+    // The coding agent keeps one instance per plugin and session and calls it one export at a time; the lock
     // only satisfies `static`. `init` replaces the host, so a re-initialised instance never keeps
     // the previous session's project.
     static WEFT: Mutex<Option<Weft>> = Mutex::new(None);
