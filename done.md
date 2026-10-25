@@ -1,5 +1,15 @@
 # Done
 
+### T69.3f. Move an element
+
+Part of T69 milestone 3, beside T69.3c (apply a patch and the dirty flag). `Editor::relocate` moves one element under a parent with a single SPEC §7 `move` patch. Undo is not included.
+
+`relocate` builds one patch, `{"op":"move","id":…,"parent":…}`, adds `slot` and `index` only when they are given, and passes the list to `Editor::apply`. A move the core rejects leaves the document and `dirty` as they were. A move the core accepts updates the document the same way any accepted patch does, and the file on disk stays unchanged until a successful save.
+
+Result: `crates/weft-studio/tests/relocate.rs`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 2
+Check: `cargo test -p weft-studio`.
+
 ### T69.3c. Apply a patch and the dirty flag
 
 Part of T69 milestone 3, beside T69.3b (layers and inspect). `Editor` applies a SPEC §7 patch list and records whether the canonical markup changed. Undo is not included: there is no inverse-patch helper and no undo stack.
