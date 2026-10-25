@@ -1,5 +1,15 @@
 # Done
 
+### T69.3d. Insert an element
+
+Part of T69 milestone 3, beside T69.3c (apply a patch and the dirty flag). `Editor::insert` places markup as a child of a parent id. The index is the child position; omitting it appends.
+
+`Editor::insert` builds one SPEC §7 `insert` patch, adding `index` only when one was given, and sends that list through `Editor::apply`. A rejection leaves the document and `dirty` as they were. A real change marks the document dirty, and the file on disk stays as it was until a successful save.
+
+Result: `crates/weft-studio/tests/insert.rs`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 2
+Check: `cargo test -p weft-studio`.
+
 ### T69.3f. Move an element
 
 Part of T69 milestone 3, beside T69.3c (apply a patch and the dirty flag). `Editor::relocate` moves one element under a parent with a single SPEC §7 `move` patch. Undo is not included.
