@@ -1,5 +1,15 @@
 # Done
 
+### T69.3g. Bind a prop
+
+Part of T69 milestone 3, beside T69.3c (apply a patch and the dirty flag). `Editor::bind` sets one prop of an element to a data binding.
+
+`Editor::bind` sends one SPEC §7 `set` patch through `Editor::apply`. The value is `{"bind": path}` with no `not`. An unknown id is the core's rejection, so the document and `dirty` stay as they were. An empty path is still that one patch.
+
+Result: `crates/weft-studio/tests/bind.rs`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 2
+Check: `cargo test -p weft-studio`.
+
 ### T69.3e. Remove an element
 
 Part of T69 milestone 3, beside T69.3c (apply a patch and the dirty flag). `Editor::remove` deletes one element by id through the same patch path as every other edit.
