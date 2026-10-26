@@ -59,7 +59,11 @@ jobs:
       # the module and the addon from moon's cache of the first.
       - name: The merge gate, Rust and static checks
         run: moon run root:rust-test root:rust-lint root:typecheck root:lint
+      - name: tests skipped (SKIP_CI_TESTS)
+        if: vars.SKIP_CI_TESTS == 'true' || env.SKIP_CI_TESTS == 'true'
+        run: echo "::notice title=SKIP_CI_TESTS::tests skipped by SKIP_CI_TESTS (package tests)"
       - name: The merge gate, package tests
+        if: vars.SKIP_CI_TESTS != 'true' && env.SKIP_CI_TESTS != 'true'
         env:
           # The runner is darwin-arm64 but is not the machine the reviewed
           # baselines were taken on; naming itself skips exactly those
@@ -115,8 +119,13 @@ jobs:
           dotnet-version: 10.0.402
       - run: pnpm install --frozen-lockfile
       # The explicit target is the one the shell's build uses, so the DLL reuses these artifacts.
-      - run: cargo nextest run --target x86_64-pc-windows-msvc -p weft-studio -p weft-studio-ffi
-      - name: The Windows leg of studio:test
+      - name: tests skipped (SKIP_CI_TESTS)
+        if: vars.SKIP_CI_TESTS == 'true' || env.SKIP_CI_TESTS == 'true'
+        run: echo "::notice title=SKIP_CI_TESTS::tests skipped by SKIP_CI_TESTS"
+      - if: vars.SKIP_CI_TESTS != 'true' && env.SKIP_CI_TESTS != 'true'
+        run: cargo nextest run --target x86_64-pc-windows-msvc -p weft-studio -p weft-studio-ffi
+      - if: vars.SKIP_CI_TESTS != 'true' && env.SKIP_CI_TESTS != 'true'
+        name: The Windows leg of studio:test
         working-directory: studio
         env:
           WEFT_STUDIO_WINDOWS: required
