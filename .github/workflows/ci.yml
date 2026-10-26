@@ -47,6 +47,13 @@ jobs:
           fetch-depth: 0
       - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
       # The workflow lint the pre-push hook (hk.pkl) runs; mise.toml pins jactionlint and shellcheck.
+      - uses: pyrlyn/ci/.github/actions/sccache@228d35117ab56821b54c82fdd5751aac71892cd0 # ci#123, re-pin to main after merge
+        with:
+          access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          bucket: ${{ vars.SCCACHE_BUCKET }}
+          endpoint: ${{ vars.SCCACHE_ENDPOINT }}
+          read-only: ${{ github.event_name == 'pull_request' }}
       - run: jactionlint --color
       - uses: pyrlyn/ci/.github/actions/setup-xcode@main
       - run: pnpm install --frozen-lockfile
@@ -68,6 +75,8 @@ jobs:
         run: moon run :test
       - name: The merge gate, runtime legs
         run: moon run root:runtimes
+      - if: always() && env.RUSTC_WRAPPER == 'sccache'
+        run: sccache --show-stats
 
   winui:
     # The WinUI goldens of crates/weft-winui/tests/fixtures/ through the XAML compiler, which
