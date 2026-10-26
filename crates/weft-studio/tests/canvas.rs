@@ -1,12 +1,12 @@
-//! Frames, the view and keyboard selection over the element tree. No Slint: a point hits a
-//! frame, and focus walks diagnostic paths.
+//! Frames, the view, rulers and keyboard selection over the element tree. No Slint: a point hits
+//! a frame, focus walks diagnostic paths, and a ruler is ticks from the pan and zoom.
 
 // A test crate: a failed unwrap or panic is a failed test, which is the point.
 #![allow(clippy::unwrap_used, clippy::panic)]
 
 use std::path::PathBuf;
 
-use weft_studio::{Canvas, EditorError, Focus, FrameGeom};
+use weft_studio::{Axis, Canvas, EditorError, Focus, FrameGeom, Tick};
 
 const LOGIN: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -16,6 +16,14 @@ const MENU: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../corpus/menu/scree
 
 fn near(left: f64, right: f64) {
     assert!((left - right).abs() < 1e-9, "{left} != {right}");
+}
+
+fn assert_ticks(ticks: &[Tick], expected: &[(f64, &str)]) {
+    assert_eq!(ticks.len(), expected.len());
+    for (tick, (screen, label)) in ticks.iter().zip(expected) {
+        near(tick.screen, *screen);
+        assert_eq!(tick.label, *label);
+    }
 }
 
 fn login_paths() -> Vec<&'static str> {
@@ -147,4 +155,69 @@ fn focus_crosses_frames_and_hover_names_an_element() {
     assert_eq!(canvas.hover(), Some((1, menu_root.as_str())));
     assert!(canvas.hover_at(1, None));
     assert!(canvas.hover().is_none());
+}
+
+#[test]
+fn a_ruler_steps_by_fifty_at_zoom_one() {
+    let canvas = Canvas::new();
+    assert_ticks(
+        &canvas.ruler(Axis::Horizontal, 200.0),
+        &[
+            (0.0, "0"),
+            (50.0, "50"),
+            (100.0, "100"),
+            (150.0, "150"),
+            (200.0, "200"),
+        ],
+    );
+}
+
+#[test]
+fn a_pan_drops_ruler_ticks_that_leave_the_span() {
+    let mut canvas = Canvas::new();
+    assert!(canvas.pan_by(25.0, 0.0));
+    assert_ticks(
+        &canvas.ruler(Axis::Horizontal, 200.0),
+        &[(25.0, "0"), (75.0, "50"), (125.0, "100"), (175.0, "150")],
+    );
+}
+
+#[test]
+fn a_ruler_steps_by_twenty_when_zoomed_to_four() {
+    let mut canvas = Canvas::new();
+    assert!(canvas.zoom_at(4.0, 0.0, 0.0));
+    near(canvas.zoom(), 4.0);
+    near(canvas.pan().0, 0.0);
+    assert_ticks(
+        &canvas.ruler(Axis::Horizontal, 200.0),
+        &[(0.0, "0"), (80.0, "20"), (160.0, "40")],
+    );
+}
+
+#[test]
+fn a_vertical_ruler_reads_pan_y_and_ignores_pan_x() {
+    let unpanned = [
+        (0.0, "0"),
+        (50.0, "50"),
+        (100.0, "100"),
+        (150.0, "150"),
+        (200.0, "200"),
+    ];
+    let panned = [(25.0, "0"), (75.0, "50"), (125.0, "100"), (175.0, "150")];
+    let mut canvas = Canvas::new();
+    assert!(canvas.pan_by(25.0, 0.0));
+    assert_ticks(&canvas.ruler(Axis::Vertical, 200.0), &unpanned);
+    let mut canvas = Canvas::new();
+    assert!(canvas.pan_by(0.0, 25.0));
+    assert_ticks(&canvas.ruler(Axis::Vertical, 200.0), &panned);
+    assert_ticks(&canvas.ruler(Axis::Horizontal, 200.0), &unpanned);
+}
+
+#[test]
+fn a_ruler_is_empty_when_the_span_is_not_a_positive_length() {
+    let canvas = Canvas::new();
+    for span in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, 0.0, -1.0] {
+        assert!(canvas.ruler(Axis::Horizontal, span).is_empty());
+        assert!(canvas.ruler(Axis::Vertical, span).is_empty());
+    }
 }

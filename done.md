@@ -1,5 +1,74 @@
 # Done
 
+### T69.3d. Insert an element
+
+Part of T69 milestone 3, beside T69.3c (apply a patch and the dirty flag). `Editor::insert` places markup as a child of a parent id. The index is the child position; omitting it appends.
+
+`Editor::insert` builds one SPEC §7 `insert` patch, adding `index` only when one was given, and sends that list through `Editor::apply`. A rejection leaves the document and `dirty` as they were. A real change marks the document dirty, and the file on disk stays as it was until a successful save.
+
+Result: `crates/weft-studio/tests/insert.rs`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 2
+Check: `cargo test -p weft-studio`.
+
+### T69.3f. Move an element
+
+Part of T69 milestone 3, beside T69.3c (apply a patch and the dirty flag). `Editor::relocate` moves one element under a parent with a single SPEC §7 `move` patch. Undo is not included.
+
+`relocate` builds one patch, `{"op":"move","id":…,"parent":…}`, adds `slot` and `index` only when they are given, and passes the list to `Editor::apply`. A move the core rejects leaves the document and `dirty` as they were. A move the core accepts updates the document the same way any accepted patch does, and the file on disk stays unchanged until a successful save.
+
+Result: `crates/weft-studio/tests/relocate.rs`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 2
+Check: `cargo test -p weft-studio`.
+
+### T69.3g. Bind a prop
+
+Part of T69 milestone 3, beside T69.3c (apply a patch and the dirty flag). `Editor::bind` sets one prop of an element to a data binding.
+
+`Editor::bind` sends one SPEC §7 `set` patch through `Editor::apply`. The value is `{"bind": path}` with no `not`. An unknown id is the core's rejection, so the document and `dirty` stay as they were. An empty path is still that one patch.
+
+Result: `crates/weft-studio/tests/bind.rs`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 2
+Check: `cargo test -p weft-studio`.
+
+### T69.3e. Remove an element
+
+Part of T69 milestone 3, beside T69.3c (apply a patch and the dirty flag). `Editor::remove` deletes one element by id through the same patch path as every other edit.
+
+`Editor::remove` builds one SPEC §7 patch, `[{"op":"remove","id":id}]`, and passes it to `Editor::apply`. A rejection leaves the document unchanged. An accepted remove drops that element, and `dirty` follows the canonical markup until a successful save.
+
+Result: `crates/weft-studio/tests/remove.rs`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 2
+Check: `cargo test -p weft-studio`.
+
+### T69.3h. Undo and redo of an applied patch
+
+Part of T69 milestone 3, beside T69.3c (apply a patch and the dirty flag). `Session` records each applied change and can return to it. Undo stores documents, not inverse patches.
+
+`Session::apply` runs the list through `Editor::apply`. When the canonical markup changes, the previous document is pushed on the undo stack and the redo stack is cleared. A list the editor rejects leaves both stacks as they were. `undo` and `redo` restore a stored document and refresh diagnostics; `dirty` is true when the restored markup differs from the canonical markup captured at `open`, and false when it is that markup.
+
+Result: `crates/weft-studio/tests/history.rs`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 3
+Check: `cargo test -p weft-studio`.
+
+### T69.3c. Apply a patch and the dirty flag
+
+Part of T69 milestone 3, beside T69.3b (layers and inspect). `Editor` applies a SPEC §7 patch list and records whether the canonical markup changed. Undo is not included: there is no inverse-patch helper and no undo stack.
+
+`Editor::apply` runs the list through `weft_core::apply_patches` in lenient mode with this catalog, these token types and the project's actions. A list the core rejects leaves the document, the diagnostics and `dirty` as they were. A list the core accepts stores the new document and the revalidated diagnostics, warnings included. `dirty` becomes true only when the canonical markup changed, and a successful `save` clears it. A failed save leaves `dirty` as it was.
+
+Result: `crates/weft-studio/tests/edit.rs`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 3
+Check: `cargo test -p weft-studio`.
+
+### T69.2c. Ruler ticks
+
+Part of T69 milestone 2, beside T69.2b (the canvas model). Frames, pan, zoom, hit-testing and keyboard focus are already there. A ruler is session math on that view: the marks along one edge of the viewport. It does not read frames, and a save still writes only the screen.
+
+The gap between ticks is at least 48 screen pixels. The step is the smallest value of the form 1, 2 or 5 times a power of ten such that `step * zoom` is at least 48. The ruler emits every multiple of that step whose screen position, `canvas * zoom + pan`, lies in `[0, span]`, from the low canvas coordinate to the high one. A whole-number label has no decimal point (`0`, `50`, `-100`). A span that is not finite, or not greater than zero, yields no ticks. The horizontal ruler reads `pan_x`; the vertical ruler reads `pan_y`.
+
+Result: `Canvas::ruler`.
+Model: Cursor / grok-4.7 · Status: done · Priority: P2 · Complexity: 2
+Check: `cargo test -p weft-studio`.
 ### T69.2b. Canvas model
 
 Part of T69 milestone 2, beside T69.2a (the embedded Slint component). The document core holds one screen. The canvas holds several, with a view and a selection, and still saves each screen as canonical markup. Done when frames, pan, zoom, frame hit-testing, element selection and keyboard movement are covered without a Slint crate.

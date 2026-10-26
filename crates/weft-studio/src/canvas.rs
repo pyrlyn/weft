@@ -1,6 +1,6 @@
-//! The canvas of milestone 2 (T69): several open screens as frames, a pan and zoom, and a
-//! selection that walks the Weft element tree. Frame positions are session state. A save still
-//! writes one screen's canonical markup and nothing about where the frame sat.
+//! The canvas of milestone 2 (T69): several open screens as frames, a pan and zoom, rulers, and a
+//! selection that walks the Weft element tree. Frame positions and ruler ticks are session state. A
+//! save still writes one screen's canonical markup and nothing about where the frame sat.
 //!
 //! Pointer coordinates are in screen space. A frame's rectangle is in canvas space:
 //! `screen = canvas * zoom + pan`. Element hit-testing needs the Slint layout, which this core
@@ -18,6 +18,10 @@ pub const MAX_ZOOM: f64 = 8.0;
 const FRAME_WIDTH: f64 = 390.0;
 const FRAME_HEIGHT: f64 = 800.0;
 const FRAME_GAP: f64 = 80.0;
+/// The smallest gap between two ruler ticks, in screen pixels.
+const MIN_RULER_GAP: f64 = 48.0;
+/// Past this many ticks the list is not a viewport. Returning it would not finish.
+const MAX_RULER_TICKS: f64 = 1_000_000.0;
 
 /// Where a frame sits in canvas space, in logical pixels.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -39,6 +43,24 @@ pub enum Focus {
     Child,
     /// The parent element. A slot is not an element, so focus steps over it.
     Parent,
+}
+
+/// Which ruler a tick list is for.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Axis {
+    /// The top ruler. It reads the horizontal pan.
+    Horizontal,
+    /// The side ruler. It reads the vertical pan.
+    Vertical,
+}
+
+/// One mark on a ruler.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Tick {
+    /// Position along the axis, in screen pixels, inside `[0, span]`.
+    pub screen: f64,
+    /// Canvas coordinate. A whole number has no decimal point.
+    pub label: String,
 }
 
 struct Frame {
@@ -159,6 +181,53 @@ impl Canvas {
         self.pan_x = x - canvas_x * next;
         self.pan_y = y - canvas_y * next;
         true
+    }
+
+    /// Ticks for one ruler across a viewport of `span` screen pixels starting at screen 0.
+    /// Horizontal uses pan_x; vertical uses pan_y. Screen position is `canvas * zoom + pan`.
+    pub fn ruler(&self, axis: Axis, span: f64) -> Vec<Tick> {
+        if !span.is_finite() || span <= 0.0 || !self.zoom.is_finite() || self.zoom <= 0.0 {
+            return Vec::new();
+        }
+        let pan = match axis {
+            Axis::Horizontal => self.pan_x,
+            Axis::Vertical => self.pan_y,
+        };
+        if !pan.is_finite() {
+            return Vec::new();
+        }
+        let step = ruler_step(self.zoom);
+        let gap = step * self.zoom;
+        if !gap.is_finite() || gap <= 0.0 {
+            return Vec::new();
+        }
+        // One step of margin on each side, so a floor or ceil that lands just
+        // off an in-range multiple still considers that multiple.
+        let low = -pan / self.zoom;
+        let high = (span - pan) / self.zoom;
+        let mut index = (low / step).floor() - 1.0;
+        let end = (high / step).ceil() + 1.0;
+        let room = (span / gap) + 4.0;
+        if !index.is_finite() || !end.is_finite() || !room.is_finite() || room > MAX_RULER_TICKS {
+            return Vec::new();
+        }
+        let mut ticks = Vec::new();
+        while index <= end {
+            let canvas = index * step;
+            let screen = canvas * self.zoom + pan;
+            if screen >= 0.0 && screen <= span {
+                ticks.push(Tick {
+                    screen,
+                    label: tick_label(canvas),
+                });
+            }
+            let next = index + 1.0;
+            if next <= index {
+                break;
+            }
+            index = next;
+        }
+        ticks
     }
 
     /// The frontmost frame whose rectangle contains the screen point `(x, y)`.
@@ -360,4 +429,49 @@ fn parent_path(path: &str) -> Option<String> {
         return Some(above.to_owned());
     }
     Some(parent.to_owned())
+}
+
+/// Smallest step of the form 1, 2 or 5 times a power of ten with `step * zoom >= 48`.
+fn ruler_step(zoom: f64) -> f64 {
+    let needed = MIN_RULER_GAP / zoom;
+    let mut exponent = if needed.is_finite() && needed > 0.0 {
+        let decade = needed.log10().floor();
+        if decade.is_finite() {
+            // One decade below the estimate, so a `log10` that rounds up still
+            // walks the candidate that actually fits.
+            (decade.clamp(-300.0, 300.0) as i32).saturating_sub(1)
+        } else {
+            0
+        }
+    } else {
+        0
+    };
+    for _ in 0..16 {
+        let magnitude = 10_f64.powi(exponent);
+        if !magnitude.is_finite() {
+            break;
+        }
+        for factor in [1.0, 2.0, 5.0] {
+            let step = factor * magnitude;
+            if step.is_finite() && step * zoom >= MIN_RULER_GAP {
+                return step;
+            }
+        }
+        exponent = exponent.saturating_add(1);
+    }
+    needed
+}
+
+/// A whole canvas coordinate has no decimal point. Anything else uses ordinary display.
+fn tick_label(value: f64) -> String {
+    let nearest = value.round();
+    if (value - nearest).abs() > 1e-6 || !nearest.is_finite() || nearest.abs() >= 1e15 {
+        return value.to_string();
+    }
+    let digits = format!("{:.0}", nearest.abs());
+    if nearest.is_sign_negative() && nearest != 0.0 {
+        format!("-{digits}")
+    } else {
+        digits
+    }
 }
