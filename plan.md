@@ -4,7 +4,7 @@ An open, agent-friendly UI description format — strict markup for models, cano
 
 | # | Status | Priority | Complexity | Readiness | Agent |
 | --- | --- | --- | --- | --- | --- |
-| T8 | in progress | P1 | 3 | 70% | Claude Code / claude-opus-5-5 |
+| T8 | in progress | P1 | 3 | 90% | Claude Code / claude-opus-5-5 |
 | T14 | in progress | P2 | 5 | 75% | Claude Code / claude-opus-5-5 |
 | T69 | in progress | P2 | 5 | 15% | Cursor / grok-4.7 |
 | T69.1 | in progress | P2 | 4 | 95% | Claude Code / claude-opus-5-5 |
@@ -35,6 +35,8 @@ Progress: steps 1–5 are done (repair cycle, summaries, `DEFAULT_MODELS`, resul
 Scope change (creator's decision): the one model loaded in LM Studio, `prism-ml/bonsai-27b`, is enough, and no other model is downloaded. "Two or three models" becomes this one local model against the baselines; the Claude runs of step 3 and step 6 are no longer required to close the task. The numeric bar is unchanged: T8 closes only if Weft first-try validity is at least 95% and validity after one repair is at least 99%. If it is not met, `bench/EVALUATION.md` records the results and the continue/stop recommendation and T8 stays open.
 
 Execution plan for step 6 onward: `node bench/src/run.ts edit|read --provider openai --model prism-ml/bonsai-27b --samples 3` (all formats and baselines, run in the background); raw results and logs into `bench/results/`, one `test.md` History row per run in the same commit; revise `bench/EVALUATION.md` against the bar; `pnpm run ci` under the full-check lock; PR and rebase merge.
+
+Progress, step 6: done on bonsai-27b, one run per screen after LM Studio crashed 57 samples into the single edit run (432 edit and 288 read samples, 25 History rows). Weft is at 94.4% valid on the first try (bar 95%) and 100% after one repair (bar 99%), so by the bar T8 does not close; `bench/EVALUATION.md` records the results, the failure analysis and the continue recommendation, with the options for the creator: a `--readback` edit run, or a primer change recorded as a method change.
 
 ### T14. Figma round trip and plugin
 
