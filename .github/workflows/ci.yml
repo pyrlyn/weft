@@ -47,7 +47,7 @@ jobs:
           fetch-depth: 0
       - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
       # The workflow lint the pre-push hook (hk.pkl) runs; mise.toml pins jactionlint and shellcheck.
-      - uses: pyrlyn/ci/.github/actions/sccache@228d35117ab56821b54c82fdd5751aac71892cd0 # ci#123, re-pin to main after merge
+      - uses: pyrlyn/ci/.github/actions/sccache@2321c16a814e33f76e64f9f043b5b9453d25ec65 # ci#123, re-pin to main after merge
         with:
           access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
           secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
