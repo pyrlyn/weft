@@ -1,0 +1,645 @@
+[1/432] prism-ml/bonsai-27b login.e1 html #0: ok
+[2/432] prism-ml/bonsai-27b login.e1 html #1: ok
+[3/432] prism-ml/bonsai-27b login.e1 html #2: ok
+[4/432] prism-ml/bonsai-27b login.e1 jsx #0: ok
+[5/432] prism-ml/bonsai-27b login.e1 weft #2: ok
+[6/432] prism-ml/bonsai-27b login.e1 jsx #2: ok
+[7/432] prism-ml/bonsai-27b login.e1 jsx #1: ok
+[8/432] prism-ml/bonsai-27b login.e1 weft #0: FAIL
+[9/432] prism-ml/bonsai-27b login.e1 weft #1: FAIL
+[10/432] prism-ml/bonsai-27b login.e1 a2ui #1: ok
+[11/432] prism-ml/bonsai-27b login.e2 weft #0: FAIL
+[12/432] prism-ml/bonsai-27b login.e2 weft #1: ok
+[13/432] prism-ml/bonsai-27b login.e1 a2ui #0: ok
+[14/432] prism-ml/bonsai-27b login.e2 html #0: ok
+[15/432] prism-ml/bonsai-27b login.e2 weft #2: FAIL
+[16/432] prism-ml/bonsai-27b login.e2 html #2: FAIL
+[17/432] prism-ml/bonsai-27b login.e1 a2ui #2: ok
+[18/432] prism-ml/bonsai-27b login.e2 jsx #1: FAIL
+[19/432] prism-ml/bonsai-27b login.e2 html #1: FAIL
+[20/432] prism-ml/bonsai-27b login.e2 jsx #0: ok
+[21/432] prism-ml/bonsai-27b login.e2 jsx #2: FAIL
+[22/432] prism-ml/bonsai-27b login.e2 a2ui #0: ok
+[23/432] prism-ml/bonsai-27b login.e3 weft #0: ok
+[24/432] prism-ml/bonsai-27b login.e2 a2ui #1: ok
+[25/432] prism-ml/bonsai-27b login.e3 html #0: ok
+[26/432] prism-ml/bonsai-27b login.e3 weft #1: ok
+[27/432] prism-ml/bonsai-27b login.e2 a2ui #2: ok
+[28/432] prism-ml/bonsai-27b login.e3 html #2: ok
+[29/432] prism-ml/bonsai-27b login.e3 jsx #0: ok
+[30/432] prism-ml/bonsai-27b login.e3 jsx #2: ok
+[31/432] prism-ml/bonsai-27b login.e3 html #1: ok
+[32/432] prism-ml/bonsai-27b login.e3 weft #2: ok
+[33/432] prism-ml/bonsai-27b login.e3 jsx #1: ok
+[34/432] prism-ml/bonsai-27b login.e3 a2ui #0: ok
+[35/432] prism-ml/bonsai-27b signup.e1 weft #0: ok
+[36/432] prism-ml/bonsai-27b login.e3 a2ui #2: ok
+[37/432] prism-ml/bonsai-27b signup.e1 weft #1: ok
+[38/432] prism-ml/bonsai-27b signup.e1 html #1: ok
+[39/432] prism-ml/bonsai-27b signup.e1 html #2: ok
+[40/432] prism-ml/bonsai-27b login.e3 a2ui #1: ok
+[41/432] prism-ml/bonsai-27b signup.e1 weft #2: ok
+[42/432] prism-ml/bonsai-27b signup.e1 jsx #1: ok
+[43/432] prism-ml/bonsai-27b signup.e1 jsx #2: ok
+[44/432] prism-ml/bonsai-27b signup.e1 html #0: ok
+[45/432] prism-ml/bonsai-27b signup.e1 jsx #0: ok
+[46/432] prism-ml/bonsai-27b signup.e2 weft #0: ok
+[47/432] prism-ml/bonsai-27b signup.e1 a2ui #0: ok
+[48/432] prism-ml/bonsai-27b signup.e1 a2ui #1: ok
+[49/432] prism-ml/bonsai-27b signup.e2 weft #2: ok
+[50/432] prism-ml/bonsai-27b signup.e1 a2ui #2: ok
+[51/432] prism-ml/bonsai-27b signup.e2 html #2: ok
+[52/432] prism-ml/bonsai-27b signup.e2 weft #1: ok
+[53/432] prism-ml/bonsai-27b signup.e2 html #0: ok
+[54/432] prism-ml/bonsai-27b signup.e2 html #1: ok
+[55/432] prism-ml/bonsai-27b signup.e2 jsx #2: ok
+[56/432] prism-ml/bonsai-27b signup.e2 jsx #0: ok
+[57/432] prism-ml/bonsai-27b signup.e2 jsx #1: ok
+## edit run (partial: 57 of 432)
+
+Rates are means over all samples; the range is the lowest and highest single-sample rate.
+
+| Model | Format | Tasks | Samples | Valid | Valid after repair | Success | Success after repair | Mean output tokens |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| prism-ml/bonsai-27b | weft | 5 | 3 | 86.7% (80.0%–100.0%) | 93.3% (80.0%–100.0%) | 73.3% (60.0%–80.0%) | 80.0% | 263 |
+| prism-ml/bonsai-27b | html | 5 | 3 | 93.3% (80.0%–100.0%) | 100.0% | 86.7% (80.0%–100.0%) | 93.3% (80.0%–100.0%) | 265 |
+| prism-ml/bonsai-27b | jsx | 5 | 3 | 100.0% | 100.0% | 86.7% (80.0%–100.0%) | 86.7% (80.0%–100.0%) | 337 |
+| prism-ml/bonsai-27b | a2ui | 4 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 965 |
+
+file:///Users/listepo/GitHub/listepo/apps/weft/.claude/worktrees/t8-bonsai-runs/bench/src/provider.ts:80
+    throw new Error(`${label} ${res.status}: ${(await res.text()).slice(0, 500)}`);
+          ^
+
+Error: OpenAI-compatible API 400: {"error":"The model has crashed without additional information. (Exit code: null)"}
+    at request (file:///Users/listepo/GitHub/listepo/apps/weft/.claude/worktrees/t8-bonsai-runs/bench/src/provider.ts:80:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async post (file:///Users/listepo/GitHub/listepo/apps/weft/.claude/worktrees/t8-bonsai-runs/bench/src/provider.ts:90:7)
+    at async Object.complete (file:///Users/listepo/GitHub/listepo/apps/weft/.claude/worktrees/t8-bonsai-runs/bench/src/provider.ts:151:21)
+    at async runTask (file:///Users/listepo/GitHub/listepo/apps/weft/.claude/worktrees/t8-bonsai-runs/bench/src/run-tasks.ts:234:22)
+    at async file:///Users/listepo/GitHub/listepo/apps/weft/.claude/worktrees/t8-bonsai-runs/bench/src/run-tasks.ts:327:21
+
+Node.js v26.7.0
+[1/36] prism-ml/bonsai-27b login.e1 html #0: ok
+[2/36] prism-ml/bonsai-27b login.e1 html #1: ok
+[3/36] prism-ml/bonsai-27b login.e1 weft #2: ok
+[4/36] prism-ml/bonsai-27b login.e1 weft #1: ok
+[5/36] prism-ml/bonsai-27b login.e1 weft #0: ok
+[6/36] prism-ml/bonsai-27b login.e1 html #2: ok
+[7/36] prism-ml/bonsai-27b login.e1 jsx #2: ok
+[8/36] prism-ml/bonsai-27b login.e1 jsx #1: ok
+[9/36] prism-ml/bonsai-27b login.e1 jsx #0: FAIL
+[10/36] prism-ml/bonsai-27b login.e1 a2ui #0: ok
+[11/36] prism-ml/bonsai-27b login.e2 weft #0: FAIL
+[12/36] prism-ml/bonsai-27b login.e2 weft #1: FAIL
+[13/36] prism-ml/bonsai-27b login.e2 html #0: ok
+[14/36] prism-ml/bonsai-27b login.e1 a2ui #1: ok
+[15/36] prism-ml/bonsai-27b login.e1 a2ui #2: ok
+[16/36] prism-ml/bonsai-27b login.e2 html #2: ok
+[17/36] prism-ml/bonsai-27b login.e2 html #1: ok
+[18/36] prism-ml/bonsai-27b login.e2 weft #2: ok
+[19/36] prism-ml/bonsai-27b login.e2 jsx #0: FAIL
+[20/36] prism-ml/bonsai-27b login.e2 jsx #2: FAIL
+[21/36] prism-ml/bonsai-27b login.e2 jsx #1: FAIL
+[22/36] prism-ml/bonsai-27b login.e3 weft #0: ok
+[23/36] prism-ml/bonsai-27b login.e2 a2ui #1: ok
+[24/36] prism-ml/bonsai-27b login.e2 a2ui #2: ok
+[25/36] prism-ml/bonsai-27b login.e3 html #0: ok
+[26/36] prism-ml/bonsai-27b login.e3 html #1: ok
+[27/36] prism-ml/bonsai-27b login.e3 weft #1: ok
+[28/36] prism-ml/bonsai-27b login.e3 html #2: ok
+[29/36] prism-ml/bonsai-27b login.e3 jsx #0: ok
+[30/36] prism-ml/bonsai-27b login.e3 jsx #1: ok
+[31/36] prism-ml/bonsai-27b login.e3 jsx #2: ok
+[32/36] prism-ml/bonsai-27b login.e3 weft #2: ok
+[33/36] prism-ml/bonsai-27b login.e2 a2ui #0: ok
+[34/36] prism-ml/bonsai-27b login.e3 a2ui #0: ok
+[35/36] prism-ml/bonsai-27b login.e3 a2ui #1: ok
+[36/36] prism-ml/bonsai-27b login.e3 a2ui #2: ok
+## edit run
+
+Rates are means over all samples; the range is the lowest and highest single-sample rate.
+
+| Model | Format | Tasks | Samples | Valid | Valid after repair | Success | Success after repair | Mean output tokens |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| prism-ml/bonsai-27b | weft | 3 | 3 | 100.0% | 100.0% | 77.8% (66.7%–100.0%) | 77.8% (66.7%–100.0%) | 239 |
+| prism-ml/bonsai-27b | html | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 229 |
+| prism-ml/bonsai-27b | jsx | 3 | 3 | 100.0% | 100.0% | 55.6% (33.3%–66.7%) | 55.6% (33.3%–66.7%) | 285 |
+| prism-ml/bonsai-27b | a2ui | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 913 |
+
+[1/36] prism-ml/bonsai-27b signup.e1 html #0: ok
+[2/36] prism-ml/bonsai-27b signup.e1 weft #1: ok
+[3/36] prism-ml/bonsai-27b signup.e1 html #1: ok
+[4/36] prism-ml/bonsai-27b signup.e1 weft #0: ok
+[5/36] prism-ml/bonsai-27b signup.e1 jsx #1: ok
+[6/36] prism-ml/bonsai-27b signup.e1 jsx #0: ok
+[7/36] prism-ml/bonsai-27b signup.e1 weft #2: FAIL
+[8/36] prism-ml/bonsai-27b signup.e1 jsx #2: ok
+[9/36] prism-ml/bonsai-27b signup.e1 html #2: ok
+[10/36] prism-ml/bonsai-27b signup.e2 weft #0: ok
+[11/36] prism-ml/bonsai-27b signup.e1 a2ui #1: ok
+[12/36] prism-ml/bonsai-27b signup.e1 a2ui #0: ok
+[13/36] prism-ml/bonsai-27b signup.e1 a2ui #2: ok
+[14/36] prism-ml/bonsai-27b signup.e2 html #0: ok
+[15/36] prism-ml/bonsai-27b signup.e2 html #1: ok
+[16/36] prism-ml/bonsai-27b signup.e2 weft #1: ok
+[17/36] prism-ml/bonsai-27b signup.e2 jsx #0: ok
+[18/36] prism-ml/bonsai-27b signup.e2 jsx #1: ok
+[19/36] prism-ml/bonsai-27b signup.e2 jsx #2: ok
+[20/36] prism-ml/bonsai-27b signup.e2 html #2: ok
+[21/36] prism-ml/bonsai-27b signup.e2 weft #2: ok
+[22/36] prism-ml/bonsai-27b signup.e2 a2ui #0: ok
+[23/36] prism-ml/bonsai-27b signup.e3 weft #0: ok
+[24/36] prism-ml/bonsai-27b signup.e2 a2ui #1: ok
+[25/36] prism-ml/bonsai-27b signup.e3 html #0: ok
+[26/36] prism-ml/bonsai-27b signup.e2 a2ui #2: ok
+[27/36] prism-ml/bonsai-27b signup.e3 html #1: ok
+[28/36] prism-ml/bonsai-27b signup.e3 html #2: ok
+[29/36] prism-ml/bonsai-27b signup.e3 weft #1: ok
+[30/36] prism-ml/bonsai-27b signup.e3 jsx #0: ok
+[31/36] prism-ml/bonsai-27b signup.e3 jsx #2: ok
+[32/36] prism-ml/bonsai-27b signup.e3 jsx #1: ok
+[33/36] prism-ml/bonsai-27b signup.e3 a2ui #1: ok
+[34/36] prism-ml/bonsai-27b signup.e3 weft #2: ok
+[35/36] prism-ml/bonsai-27b signup.e3 a2ui #0: ok
+[36/36] prism-ml/bonsai-27b signup.e3 a2ui #2: ok
+## edit run
+
+Rates are means over all samples; the range is the lowest and highest single-sample rate.
+
+| Model | Format | Tasks | Samples | Valid | Valid after repair | Success | Success after repair | Mean output tokens |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| prism-ml/bonsai-27b | weft | 3 | 3 | 88.9% (66.7%–100.0%) | 100.0% | 88.9% (66.7%–100.0%) | 100.0% | 300 |
+| prism-ml/bonsai-27b | html | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 320 |
+| prism-ml/bonsai-27b | jsx | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 411 |
+| prism-ml/bonsai-27b | a2ui | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 1080 |
+
+[1/36] prism-ml/bonsai-27b settings.e1 html #0: ok
+[2/36] prism-ml/bonsai-27b settings.e1 html #1: ok
+[3/36] prism-ml/bonsai-27b settings.e1 html #2: ok
+[4/36] prism-ml/bonsai-27b settings.e1 weft #0: ok
+[5/36] prism-ml/bonsai-27b settings.e1 jsx #0: ok
+[6/36] prism-ml/bonsai-27b settings.e1 jsx #1: ok
+[7/36] prism-ml/bonsai-27b settings.e1 weft #1: ok
+[8/36] prism-ml/bonsai-27b settings.e1 weft #2: ok
+[9/36] prism-ml/bonsai-27b settings.e1 jsx #2: ok
+[10/36] prism-ml/bonsai-27b settings.e2 weft #0: ok
+[11/36] prism-ml/bonsai-27b settings.e1 a2ui #0: ok
+[12/36] prism-ml/bonsai-27b settings.e1 a2ui #1: ok
+[13/36] prism-ml/bonsai-27b settings.e2 html #0: ok
+[14/36] prism-ml/bonsai-27b settings.e2 weft #1: ok
+[15/36] prism-ml/bonsai-27b settings.e2 html #1: ok
+[16/36] prism-ml/bonsai-27b settings.e2 jsx #0: ok
+[17/36] prism-ml/bonsai-27b settings.e1 a2ui #2: ok
+[18/36] prism-ml/bonsai-27b settings.e2 jsx #1: ok
+[19/36] prism-ml/bonsai-27b settings.e2 weft #2: ok
+[20/36] prism-ml/bonsai-27b settings.e2 html #2: ok
+[21/36] prism-ml/bonsai-27b settings.e2 jsx #2: ok
+[22/36] prism-ml/bonsai-27b settings.e2 a2ui #0: ok
+[23/36] prism-ml/bonsai-27b settings.e3 weft #0: ok
+[24/36] prism-ml/bonsai-27b settings.e3 weft #1: FAIL
+[25/36] prism-ml/bonsai-27b settings.e2 a2ui #2: ok
+[26/36] prism-ml/bonsai-27b settings.e2 a2ui #1: ok
+[27/36] prism-ml/bonsai-27b settings.e3 html #1: ok
+[28/36] prism-ml/bonsai-27b settings.e3 html #2: ok
+[29/36] prism-ml/bonsai-27b settings.e3 jsx #0: ok
+[30/36] prism-ml/bonsai-27b settings.e3 jsx #1: FAIL
+[31/36] prism-ml/bonsai-27b settings.e3 html #0: ok
+[32/36] prism-ml/bonsai-27b settings.e3 weft #2: ok
+[33/36] prism-ml/bonsai-27b settings.e3 jsx #2: FAIL
+[34/36] prism-ml/bonsai-27b settings.e3 a2ui #2: ok
+[35/36] prism-ml/bonsai-27b settings.e3 a2ui #1: ok
+[36/36] prism-ml/bonsai-27b settings.e3 a2ui #0: ok
+## edit run
+
+Rates are means over all samples; the range is the lowest and highest single-sample rate.
+
+| Model | Format | Tasks | Samples | Valid | Valid after repair | Success | Success after repair | Mean output tokens |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| prism-ml/bonsai-27b | weft | 3 | 3 | 100.0% | 100.0% | 88.9% (66.7%–100.0%) | 88.9% (66.7%–100.0%) | 293 |
+| prism-ml/bonsai-27b | html | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 322 |
+| prism-ml/bonsai-27b | jsx | 3 | 3 | 100.0% | 100.0% | 77.8% (66.7%–100.0%) | 77.8% (66.7%–100.0%) | 398 |
+| prism-ml/bonsai-27b | a2ui | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 938 |
+
+[1/36] prism-ml/bonsai-27b data-table.e1 html #0: ok
+[2/36] prism-ml/bonsai-27b data-table.e1 weft #2: ok
+[3/36] prism-ml/bonsai-27b data-table.e1 weft #1: ok
+[4/36] prism-ml/bonsai-27b data-table.e1 html #2: ok
+[5/36] prism-ml/bonsai-27b data-table.e1 jsx #0: ok
+[6/36] prism-ml/bonsai-27b data-table.e1 jsx #1: ok
+[7/36] prism-ml/bonsai-27b data-table.e1 jsx #2: ok
+[8/36] prism-ml/bonsai-27b data-table.e1 weft #0: ok
+[9/36] prism-ml/bonsai-27b data-table.e1 html #1: ok
+[10/36] prism-ml/bonsai-27b data-table.e1 a2ui #0: ok
+[11/36] prism-ml/bonsai-27b data-table.e1 a2ui #2: ok
+[12/36] prism-ml/bonsai-27b data-table.e1 a2ui #1: ok
+[13/36] prism-ml/bonsai-27b data-table.e2 html #0: ok
+[14/36] prism-ml/bonsai-27b data-table.e2 weft #0: ok
+[15/36] prism-ml/bonsai-27b data-table.e2 html #1: ok
+[16/36] prism-ml/bonsai-27b data-table.e2 html #2: ok
+[17/36] prism-ml/bonsai-27b data-table.e2 jsx #0: ok
+[18/36] prism-ml/bonsai-27b data-table.e2 jsx #1: ok
+[19/36] prism-ml/bonsai-27b data-table.e2 weft #2: ok
+[20/36] prism-ml/bonsai-27b data-table.e2 jsx #2: ok
+[21/36] prism-ml/bonsai-27b data-table.e2 weft #1: ok
+[22/36] prism-ml/bonsai-27b data-table.e2 a2ui #1: ok
+[23/36] prism-ml/bonsai-27b data-table.e3 weft #0: ok
+[24/36] prism-ml/bonsai-27b data-table.e3 weft #1: ok
+[25/36] prism-ml/bonsai-27b data-table.e3 weft #2: ok
+[26/36] prism-ml/bonsai-27b data-table.e2 a2ui #0: ok
+[27/36] prism-ml/bonsai-27b data-table.e3 html #2: ok
+[28/36] prism-ml/bonsai-27b data-table.e3 html #0: ok
+[29/36] prism-ml/bonsai-27b data-table.e3 jsx #0: ok
+[30/36] prism-ml/bonsai-27b data-table.e3 html #1: ok
+[31/36] prism-ml/bonsai-27b data-table.e3 jsx #1: ok
+[32/36] prism-ml/bonsai-27b data-table.e3 jsx #2: ok
+[33/36] prism-ml/bonsai-27b data-table.e2 a2ui #2: ok
+[34/36] prism-ml/bonsai-27b data-table.e3 a2ui #2: ok
+[35/36] prism-ml/bonsai-27b data-table.e3 a2ui #1: ok
+[36/36] prism-ml/bonsai-27b data-table.e3 a2ui #0: ok
+## edit run
+
+Rates are means over all samples; the range is the lowest and highest single-sample rate.
+
+| Model | Format | Tasks | Samples | Valid | Valid after repair | Success | Success after repair | Mean output tokens |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| prism-ml/bonsai-27b | weft | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 343 |
+| prism-ml/bonsai-27b | html | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 339 |
+| prism-ml/bonsai-27b | jsx | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 346 |
+| prism-ml/bonsai-27b | a2ui | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 1035 |
+
+[1/36] prism-ml/bonsai-27b tabs.e1 html #0: ok
+[2/36] prism-ml/bonsai-27b tabs.e1 weft #1: ok
+[3/36] prism-ml/bonsai-27b tabs.e1 weft #0: ok
+[4/36] prism-ml/bonsai-27b tabs.e1 weft #2: ok
+[5/36] prism-ml/bonsai-27b tabs.e1 html #2: ok
+[6/36] prism-ml/bonsai-27b tabs.e1 jsx #0: ok
+[7/36] prism-ml/bonsai-27b tabs.e1 jsx #2: ok
+[8/36] prism-ml/bonsai-27b tabs.e1 html #1: ok
+[9/36] prism-ml/bonsai-27b tabs.e1 jsx #1: ok
+[10/36] prism-ml/bonsai-27b tabs.e1 a2ui #1: ok
+[11/36] prism-ml/bonsai-27b tabs.e1 a2ui #2: ok
+[12/36] prism-ml/bonsai-27b tabs.e2 weft #1: ok
+[13/36] prism-ml/bonsai-27b tabs.e2 weft #0: ok
+[14/36] prism-ml/bonsai-27b tabs.e2 html #0: ok
+[15/36] prism-ml/bonsai-27b tabs.e2 html #1: ok
+[16/36] prism-ml/bonsai-27b tabs.e2 html #2: ok
+[17/36] prism-ml/bonsai-27b tabs.e2 weft #2: ok
+[18/36] prism-ml/bonsai-27b tabs.e2 jsx #0: ok
+[19/36] prism-ml/bonsai-27b tabs.e2 jsx #2: ok
+[20/36] prism-ml/bonsai-27b tabs.e2 jsx #1: ok
+[21/36] prism-ml/bonsai-27b tabs.e1 a2ui #0: ok
+[22/36] prism-ml/bonsai-27b tabs.e2 a2ui #1: ok
+[23/36] prism-ml/bonsai-27b tabs.e2 a2ui #0: ok
+[24/36] prism-ml/bonsai-27b tabs.e3 weft #1: ok
+[25/36] prism-ml/bonsai-27b tabs.e3 weft #0: ok
+[26/36] prism-ml/bonsai-27b tabs.e3 html #0: ok
+[27/36] prism-ml/bonsai-27b tabs.e3 html #1: ok
+[28/36] prism-ml/bonsai-27b tabs.e3 weft #2: ok
+[29/36] prism-ml/bonsai-27b tabs.e3 html #2: ok
+[30/36] prism-ml/bonsai-27b tabs.e2 a2ui #2: ok
+[31/36] prism-ml/bonsai-27b tabs.e3 jsx #0: ok
+[32/36] prism-ml/bonsai-27b tabs.e3 jsx #1: ok
+[33/36] prism-ml/bonsai-27b tabs.e3 a2ui #1: ok
+[34/36] prism-ml/bonsai-27b tabs.e3 a2ui #0: ok
+[35/36] prism-ml/bonsai-27b tabs.e3 a2ui #2: ok
+[36/36] prism-ml/bonsai-27b tabs.e3 jsx #2: ok
+## edit run
+
+Rates are means over all samples; the range is the lowest and highest single-sample rate.
+
+| Model | Format | Tasks | Samples | Valid | Valid after repair | Success | Success after repair | Mean output tokens |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| prism-ml/bonsai-27b | weft | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 284 |
+| prism-ml/bonsai-27b | html | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 407 |
+| prism-ml/bonsai-27b | jsx | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 417 |
+| prism-ml/bonsai-27b | a2ui | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 831 |
+
+[1/36] prism-ml/bonsai-27b confirm-dialog.e1 html #0: ok
+[2/36] prism-ml/bonsai-27b confirm-dialog.e1 html #1: ok
+[3/36] prism-ml/bonsai-27b confirm-dialog.e1 weft #1: ok
+[4/36] prism-ml/bonsai-27b confirm-dialog.e1 html #2: ok
+[5/36] prism-ml/bonsai-27b confirm-dialog.e1 jsx #1: ok
+[6/36] prism-ml/bonsai-27b confirm-dialog.e1 jsx #2: ok
+[7/36] prism-ml/bonsai-27b confirm-dialog.e1 jsx #0: ok
+[8/36] prism-ml/bonsai-27b confirm-dialog.e1 weft #0: ok
+[9/36] prism-ml/bonsai-27b confirm-dialog.e1 weft #2: ok
+[10/36] prism-ml/bonsai-27b confirm-dialog.e1 a2ui #1: ok
+[11/36] prism-ml/bonsai-27b confirm-dialog.e1 a2ui #0: ok
+[12/36] prism-ml/bonsai-27b confirm-dialog.e2 weft #0: ok
+[13/36] prism-ml/bonsai-27b confirm-dialog.e2 html #0: ok
+[14/36] prism-ml/bonsai-27b confirm-dialog.e1 a2ui #2: ok
+[15/36] prism-ml/bonsai-27b confirm-dialog.e2 html #1: ok
+[16/36] prism-ml/bonsai-27b confirm-dialog.e2 html #2: ok
+[17/36] prism-ml/bonsai-27b confirm-dialog.e2 weft #1: ok
+[18/36] prism-ml/bonsai-27b confirm-dialog.e2 jsx #0: ok
+[19/36] prism-ml/bonsai-27b confirm-dialog.e2 jsx #1: ok
+[20/36] prism-ml/bonsai-27b confirm-dialog.e2 weft #2: ok
+[21/36] prism-ml/bonsai-27b confirm-dialog.e2 jsx #2: ok
+[22/36] prism-ml/bonsai-27b confirm-dialog.e2 a2ui #0: ok
+[23/36] prism-ml/bonsai-27b confirm-dialog.e2 a2ui #1: ok
+[24/36] prism-ml/bonsai-27b confirm-dialog.e3 weft #1: ok
+[25/36] prism-ml/bonsai-27b confirm-dialog.e3 weft #0: FAIL
+[26/36] prism-ml/bonsai-27b confirm-dialog.e3 html #1: FAIL
+[27/36] prism-ml/bonsai-27b confirm-dialog.e2 a2ui #2: ok
+[28/36] prism-ml/bonsai-27b confirm-dialog.e3 html #2: ok
+[29/36] prism-ml/bonsai-27b confirm-dialog.e3 jsx #1: ok
+[30/36] prism-ml/bonsai-27b confirm-dialog.e3 jsx #0: ok
+[31/36] prism-ml/bonsai-27b confirm-dialog.e3 html #0: ok
+[32/36] prism-ml/bonsai-27b confirm-dialog.e3 jsx #2: ok
+[33/36] prism-ml/bonsai-27b confirm-dialog.e3 a2ui #1: ok
+[34/36] prism-ml/bonsai-27b confirm-dialog.e3 a2ui #0: ok
+[35/36] prism-ml/bonsai-27b confirm-dialog.e3 a2ui #2: ok
+[36/36] prism-ml/bonsai-27b confirm-dialog.e3 weft #2: ok
+## edit run
+
+Rates are means over all samples; the range is the lowest and highest single-sample rate.
+
+| Model | Format | Tasks | Samples | Valid | Valid after repair | Success | Success after repair | Mean output tokens |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| prism-ml/bonsai-27b | weft | 3 | 3 | 100.0% | 100.0% | 88.9% (66.7%–100.0%) | 88.9% (66.7%–100.0%) | 201 |
+| prism-ml/bonsai-27b | html | 3 | 3 | 100.0% | 100.0% | 88.9% (66.7%–100.0%) | 88.9% (66.7%–100.0%) | 183 |
+| prism-ml/bonsai-27b | jsx | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 198 |
+| prism-ml/bonsai-27b | a2ui | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 679 |
+
+[1/36] prism-ml/bonsai-27b wizard-step.e1 weft #1: ok
+[2/36] prism-ml/bonsai-27b wizard-step.e1 weft #0: ok
+[3/36] prism-ml/bonsai-27b wizard-step.e1 html #0: ok
+[4/36] prism-ml/bonsai-27b wizard-step.e1 html #2: ok
+[5/36] prism-ml/bonsai-27b wizard-step.e1 html #1: ok
+[6/36] prism-ml/bonsai-27b wizard-step.e1 weft #2: ok
+[7/36] prism-ml/bonsai-27b wizard-step.e1 jsx #0: ok
+[8/36] prism-ml/bonsai-27b wizard-step.e1 jsx #1: ok
+[9/36] prism-ml/bonsai-27b wizard-step.e1 a2ui #2: ok
+[10/36] prism-ml/bonsai-27b wizard-step.e1 jsx #2: ok
+[11/36] prism-ml/bonsai-27b wizard-step.e1 a2ui #0: ok
+[12/36] prism-ml/bonsai-27b wizard-step.e2 weft #0: ok
+[13/36] prism-ml/bonsai-27b wizard-step.e1 a2ui #1: ok
+[14/36] prism-ml/bonsai-27b wizard-step.e2 weft #1: ok
+[15/36] prism-ml/bonsai-27b wizard-step.e2 html #0: ok
+[16/36] prism-ml/bonsai-27b wizard-step.e2 html #1: ok
+[17/36] prism-ml/bonsai-27b wizard-step.e2 html #2: ok
+[18/36] prism-ml/bonsai-27b wizard-step.e2 jsx #1: ok
+[19/36] prism-ml/bonsai-27b wizard-step.e2 jsx #2: ok
+[20/36] prism-ml/bonsai-27b wizard-step.e2 weft #2: ok
+[21/36] prism-ml/bonsai-27b wizard-step.e2 jsx #0: ok
+[22/36] prism-ml/bonsai-27b wizard-step.e2 a2ui #1: ok
+[23/36] prism-ml/bonsai-27b wizard-step.e3 weft #0: ok
+[24/36] prism-ml/bonsai-27b wizard-step.e2 a2ui #2: ok
+[25/36] prism-ml/bonsai-27b wizard-step.e2 a2ui #0: ok
+[26/36] prism-ml/bonsai-27b wizard-step.e3 html #0: ok
+[27/36] prism-ml/bonsai-27b wizard-step.e3 html #1: ok
+[28/36] prism-ml/bonsai-27b wizard-step.e3 html #2: ok
+[29/36] prism-ml/bonsai-27b wizard-step.e3 jsx #0: ok
+[30/36] prism-ml/bonsai-27b wizard-step.e3 weft #1: ok
+[31/36] prism-ml/bonsai-27b wizard-step.e3 jsx #1: ok
+[32/36] prism-ml/bonsai-27b wizard-step.e3 jsx #2: ok
+[33/36] prism-ml/bonsai-27b wizard-step.e3 weft #2: ok
+[34/36] prism-ml/bonsai-27b wizard-step.e3 a2ui #0: ok
+[35/36] prism-ml/bonsai-27b wizard-step.e3 a2ui #1: ok
+[36/36] prism-ml/bonsai-27b wizard-step.e3 a2ui #2: ok
+## edit run
+
+Rates are means over all samples; the range is the lowest and highest single-sample rate.
+
+| Model | Format | Tasks | Samples | Valid | Valid after repair | Success | Success after repair | Mean output tokens |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| prism-ml/bonsai-27b | weft | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 225 |
+| prism-ml/bonsai-27b | html | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 270 |
+| prism-ml/bonsai-27b | jsx | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 346 |
+| prism-ml/bonsai-27b | a2ui | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 701 |
+
+[1/36] prism-ml/bonsai-27b search-results.e1 html #0: ok
+[2/36] prism-ml/bonsai-27b search-results.e1 html #1: ok
+[3/36] prism-ml/bonsai-27b search-results.e1 html #2: ok
+[4/36] prism-ml/bonsai-27b search-results.e1 jsx #0: ok
+[5/36] prism-ml/bonsai-27b search-results.e1 jsx #1: ok
+[6/36] prism-ml/bonsai-27b search-results.e1 weft #0: ok
+[7/36] prism-ml/bonsai-27b search-results.e1 jsx #2: ok
+[8/36] prism-ml/bonsai-27b search-results.e1 weft #2: ok
+[9/36] prism-ml/bonsai-27b search-results.e1 weft #1: ok
+[10/36] prism-ml/bonsai-27b search-results.e1 a2ui #1: FAIL
+[11/36] prism-ml/bonsai-27b search-results.e1 a2ui #2: ok
+[12/36] prism-ml/bonsai-27b search-results.e1 a2ui #0: FAIL
+[13/36] prism-ml/bonsai-27b search-results.e2 html #0: ok
+[14/36] prism-ml/bonsai-27b search-results.e2 weft #0: ok
+[15/36] prism-ml/bonsai-27b search-results.e2 html #2: ok
+[16/36] prism-ml/bonsai-27b search-results.e2 html #1: ok
+[17/36] prism-ml/bonsai-27b search-results.e2 weft #2: ok
+[18/36] prism-ml/bonsai-27b search-results.e2 jsx #2: FAIL
+[19/36] prism-ml/bonsai-27b search-results.e2 weft #1: ok
+[20/36] prism-ml/bonsai-27b search-results.e2 jsx #0: FAIL
+[21/36] prism-ml/bonsai-27b search-results.e2 jsx #1: FAIL
+[22/36] prism-ml/bonsai-27b search-results.e2 a2ui #0: ok
+[23/36] prism-ml/bonsai-27b search-results.e2 a2ui #1: ok
+[24/36] prism-ml/bonsai-27b search-results.e2 a2ui #2: ok
+[25/36] prism-ml/bonsai-27b search-results.e3 html #0: ok
+[26/36] prism-ml/bonsai-27b search-results.e3 weft #1: ok
+[27/36] prism-ml/bonsai-27b search-results.e3 weft #0: ok
+[28/36] prism-ml/bonsai-27b search-results.e3 html #2: ok
+[29/36] prism-ml/bonsai-27b search-results.e3 jsx #0: ok
+[30/36] prism-ml/bonsai-27b search-results.e3 weft #2: ok
+[31/36] prism-ml/bonsai-27b search-results.e3 jsx #2: ok
+[32/36] prism-ml/bonsai-27b search-results.e3 html #1: ok
+[33/36] prism-ml/bonsai-27b search-results.e3 a2ui #0: FAIL
+[34/36] prism-ml/bonsai-27b search-results.e3 jsx #1: ok
+[35/36] prism-ml/bonsai-27b search-results.e3 a2ui #1: ok
+[36/36] prism-ml/bonsai-27b search-results.e3 a2ui #2: ok
+## edit run
+
+Rates are means over all samples; the range is the lowest and highest single-sample rate.
+
+| Model | Format | Tasks | Samples | Valid | Valid after repair | Success | Success after repair | Mean output tokens |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| prism-ml/bonsai-27b | weft | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 272 |
+| prism-ml/bonsai-27b | html | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 230 |
+| prism-ml/bonsai-27b | jsx | 3 | 3 | 100.0% | 100.0% | 66.7% | 66.7% | 273 |
+| prism-ml/bonsai-27b | a2ui | 3 | 3 | 100.0% | 100.0% | 66.7% (33.3%–100.0%) | 66.7% (33.3%–100.0%) | 761 |
+
+[1/36] prism-ml/bonsai-27b todo-list.e1 html #0: ok
+[2/36] prism-ml/bonsai-27b todo-list.e1 weft #1: ok
+[3/36] prism-ml/bonsai-27b todo-list.e1 weft #0: ok
+[4/36] prism-ml/bonsai-27b todo-list.e1 html #2: ok
+[5/36] prism-ml/bonsai-27b todo-list.e1 html #1: ok
+[6/36] prism-ml/bonsai-27b todo-list.e1 jsx #0: ok
+[7/36] prism-ml/bonsai-27b todo-list.e1 jsx #2: ok
+[8/36] prism-ml/bonsai-27b todo-list.e1 weft #2: ok
+[9/36] prism-ml/bonsai-27b todo-list.e1 jsx #1: ok
+[10/36] prism-ml/bonsai-27b todo-list.e1 a2ui #1: ok
+[11/36] prism-ml/bonsai-27b todo-list.e1 a2ui #0: ok
+[12/36] prism-ml/bonsai-27b todo-list.e2 weft #1: FAIL
+[13/36] prism-ml/bonsai-27b todo-list.e2 html #0: ok
+[14/36] prism-ml/bonsai-27b todo-list.e2 html #1: ok
+[15/36] prism-ml/bonsai-27b todo-list.e1 a2ui #2: ok
+[16/36] prism-ml/bonsai-27b todo-list.e2 html #2: ok
+[17/36] prism-ml/bonsai-27b todo-list.e2 jsx #1: ok
+[18/36] prism-ml/bonsai-27b todo-list.e2 jsx #2: ok
+[19/36] prism-ml/bonsai-27b todo-list.e2 jsx #0: ok
+[20/36] prism-ml/bonsai-27b todo-list.e2 weft #2: ok
+[21/36] prism-ml/bonsai-27b todo-list.e2 weft #0: FAIL
+[22/36] prism-ml/bonsai-27b todo-list.e3 weft #0: ok
+[23/36] prism-ml/bonsai-27b todo-list.e2 a2ui #1: ok
+[24/36] prism-ml/bonsai-27b todo-list.e2 a2ui #2: ok
+[25/36] prism-ml/bonsai-27b todo-list.e3 html #0: ok
+[26/36] prism-ml/bonsai-27b todo-list.e3 html #1: ok
+[27/36] prism-ml/bonsai-27b todo-list.e2 a2ui #0: ok
+[28/36] prism-ml/bonsai-27b todo-list.e3 jsx #0: ok
+[29/36] prism-ml/bonsai-27b todo-list.e3 jsx #1: ok
+[30/36] prism-ml/bonsai-27b todo-list.e3 jsx #2: ok
+[31/36] prism-ml/bonsai-27b todo-list.e3 html #2: ok
+[32/36] prism-ml/bonsai-27b todo-list.e3 a2ui #0: ok
+[33/36] prism-ml/bonsai-27b todo-list.e3 weft #1: FAIL
+[34/36] prism-ml/bonsai-27b todo-list.e3 a2ui #1: ok
+[35/36] prism-ml/bonsai-27b todo-list.e3 weft #2: FAIL
+[36/36] prism-ml/bonsai-27b todo-list.e3 a2ui #2: ok
+## edit run
+
+Rates are means over all samples; the range is the lowest and highest single-sample rate.
+
+| Model | Format | Tasks | Samples | Valid | Valid after repair | Success | Success after repair | Mean output tokens |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| prism-ml/bonsai-27b | weft | 3 | 3 | 66.7% | 100.0% | 55.6% (33.3%–66.7%) | 88.9% (66.7%–100.0%) | 265 |
+| prism-ml/bonsai-27b | html | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 261 |
+| prism-ml/bonsai-27b | jsx | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 313 |
+| prism-ml/bonsai-27b | a2ui | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 824 |
+
+[1/36] prism-ml/bonsai-27b profile.e1 html #0: ok
+[2/36] prism-ml/bonsai-27b profile.e1 weft #0: ok
+[3/36] prism-ml/bonsai-27b profile.e1 html #2: ok
+[4/36] prism-ml/bonsai-27b profile.e1 weft #1: ok
+[5/36] prism-ml/bonsai-27b profile.e1 weft #2: ok
+[6/36] prism-ml/bonsai-27b profile.e1 jsx #0: ok
+[7/36] prism-ml/bonsai-27b profile.e1 jsx #1: ok
+[8/36] prism-ml/bonsai-27b profile.e1 jsx #2: ok
+[9/36] prism-ml/bonsai-27b profile.e1 html #1: ok
+[10/36] prism-ml/bonsai-27b profile.e1 a2ui #0: FAIL
+[11/36] prism-ml/bonsai-27b profile.e2 weft #1: ok
+[12/36] prism-ml/bonsai-27b profile.e2 weft #0: ok
+[13/36] prism-ml/bonsai-27b profile.e2 html #0: ok
+[14/36] prism-ml/bonsai-27b profile.e2 html #1: ok
+[15/36] prism-ml/bonsai-27b profile.e2 weft #2: ok
+[16/36] prism-ml/bonsai-27b profile.e2 html #2: ok
+[17/36] prism-ml/bonsai-27b profile.e1 a2ui #2: ok
+[18/36] prism-ml/bonsai-27b profile.e1 a2ui #1: ok
+[19/36] prism-ml/bonsai-27b profile.e2 jsx #1: ok
+[20/36] prism-ml/bonsai-27b profile.e2 jsx #2: ok
+[21/36] prism-ml/bonsai-27b profile.e2 jsx #0: ok
+[22/36] prism-ml/bonsai-27b profile.e2 a2ui #1: ok
+[23/36] prism-ml/bonsai-27b profile.e3 weft #0: FAIL
+[24/36] prism-ml/bonsai-27b profile.e2 a2ui #0: ok
+[25/36] prism-ml/bonsai-27b profile.e2 a2ui #2: ok
+[26/36] prism-ml/bonsai-27b profile.e3 weft #2: FAIL
+[27/36] prism-ml/bonsai-27b profile.e3 html #1: ok
+[28/36] prism-ml/bonsai-27b profile.e3 weft #1: ok
+[29/36] prism-ml/bonsai-27b profile.e3 html #2: ok
+[30/36] prism-ml/bonsai-27b profile.e3 html #0: ok
+[31/36] prism-ml/bonsai-27b profile.e3 jsx #0: ok
+[32/36] prism-ml/bonsai-27b profile.e3 jsx #2: ok
+[33/36] prism-ml/bonsai-27b profile.e3 jsx #1: FAIL
+[34/36] prism-ml/bonsai-27b profile.e3 a2ui #2: ok
+[35/36] prism-ml/bonsai-27b profile.e3 a2ui #0: ok
+[36/36] prism-ml/bonsai-27b profile.e3 a2ui #1: ok
+## edit run
+
+Rates are means over all samples; the range is the lowest and highest single-sample rate.
+
+| Model | Format | Tasks | Samples | Valid | Valid after repair | Success | Success after repair | Mean output tokens |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| prism-ml/bonsai-27b | weft | 3 | 3 | 100.0% | 100.0% | 77.8% (66.7%–100.0%) | 77.8% (66.7%–100.0%) | 202 |
+| prism-ml/bonsai-27b | html | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 163 |
+| prism-ml/bonsai-27b | jsx | 3 | 3 | 100.0% | 100.0% | 88.9% (66.7%–100.0%) | 88.9% (66.7%–100.0%) | 168 |
+| prism-ml/bonsai-27b | a2ui | 3 | 3 | 100.0% | 100.0% | 88.9% (66.7%–100.0%) | 88.9% (66.7%–100.0%) | 806 |
+
+[1/36] prism-ml/bonsai-27b menu.e1 html #0: ok
+[2/36] prism-ml/bonsai-27b menu.e1 html #1: ok
+[3/36] prism-ml/bonsai-27b menu.e1 html #2: ok
+[4/36] prism-ml/bonsai-27b menu.e1 weft #2: ok
+[5/36] prism-ml/bonsai-27b menu.e1 jsx #0: ok
+[6/36] prism-ml/bonsai-27b menu.e1 weft #0: ok
+[7/36] prism-ml/bonsai-27b menu.e1 jsx #1: ok
+[8/36] prism-ml/bonsai-27b menu.e1 weft #1: ok
+[9/36] prism-ml/bonsai-27b menu.e1 jsx #2: ok
+[10/36] prism-ml/bonsai-27b menu.e1 a2ui #1: ok
+[11/36] prism-ml/bonsai-27b menu.e1 a2ui #0: ok
+[12/36] prism-ml/bonsai-27b menu.e1 a2ui #2: ok
+[13/36] prism-ml/bonsai-27b menu.e2 html #0: ok
+[14/36] prism-ml/bonsai-27b menu.e2 weft #2: FAIL
+[15/36] prism-ml/bonsai-27b menu.e2 html #1: FAIL
+[16/36] prism-ml/bonsai-27b menu.e2 weft #0: FAIL
+[17/36] prism-ml/bonsai-27b menu.e2 html #2: ok
+[18/36] prism-ml/bonsai-27b menu.e2 jsx #1: ok
+[19/36] prism-ml/bonsai-27b menu.e2 jsx #2: ok
+[20/36] prism-ml/bonsai-27b menu.e2 jsx #0: ok
+[21/36] prism-ml/bonsai-27b menu.e2 weft #1: FAIL
+[22/36] prism-ml/bonsai-27b menu.e3 weft #0: ok
+[23/36] prism-ml/bonsai-27b menu.e2 a2ui #0: ok
+[24/36] prism-ml/bonsai-27b menu.e3 weft #1: ok
+[25/36] prism-ml/bonsai-27b menu.e2 a2ui #1: ok
+[26/36] prism-ml/bonsai-27b menu.e3 weft #2: ok
+[27/36] prism-ml/bonsai-27b menu.e3 html #0: ok
+[28/36] prism-ml/bonsai-27b menu.e3 html #1: ok
+[29/36] prism-ml/bonsai-27b menu.e3 html #2: ok
+[30/36] prism-ml/bonsai-27b menu.e3 jsx #0: ok
+[31/36] prism-ml/bonsai-27b menu.e2 a2ui #2: ok
+[32/36] prism-ml/bonsai-27b menu.e3 jsx #2: ok
+[33/36] prism-ml/bonsai-27b menu.e3 jsx #1: ok
+[34/36] prism-ml/bonsai-27b menu.e3 a2ui #0: ok
+[35/36] prism-ml/bonsai-27b menu.e3 a2ui #2: ok
+[36/36] prism-ml/bonsai-27b menu.e3 a2ui #1: ok
+## edit run
+
+Rates are means over all samples; the range is the lowest and highest single-sample rate.
+
+| Model | Format | Tasks | Samples | Valid | Valid after repair | Success | Success after repair | Mean output tokens |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| prism-ml/bonsai-27b | weft | 3 | 3 | 77.8% (66.7%–100.0%) | 100.0% | 66.7% | 77.8% (66.7%–100.0%) | 175 |
+| prism-ml/bonsai-27b | html | 3 | 3 | 88.9% (66.7%–100.0%) | 100.0% | 88.9% (66.7%–100.0%) | 100.0% | 176 |
+| prism-ml/bonsai-27b | jsx | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 191 |
+| prism-ml/bonsai-27b | a2ui | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 798 |
+
+[1/36] prism-ml/bonsai-27b error-state.e1 weft #0: ok
+[2/36] prism-ml/bonsai-27b error-state.e1 html #1: ok
+[3/36] prism-ml/bonsai-27b error-state.e1 weft #1: ok
+[4/36] prism-ml/bonsai-27b error-state.e1 html #0: ok
+[5/36] prism-ml/bonsai-27b error-state.e1 weft #2: ok
+[6/36] prism-ml/bonsai-27b error-state.e1 jsx #1: FAIL
+[7/36] prism-ml/bonsai-27b error-state.e1 jsx #2: FAIL
+[8/36] prism-ml/bonsai-27b error-state.e1 html #2: ok
+[9/36] prism-ml/bonsai-27b error-state.e1 jsx #0: ok
+[10/36] prism-ml/bonsai-27b error-state.e2 weft #0: ok
+[11/36] prism-ml/bonsai-27b error-state.e1 a2ui #2: FAIL
+[12/36] prism-ml/bonsai-27b error-state.e1 a2ui #1: FAIL
+[13/36] prism-ml/bonsai-27b error-state.e1 a2ui #0: FAIL
+[14/36] prism-ml/bonsai-27b error-state.e2 html #1: ok
+[15/36] prism-ml/bonsai-27b error-state.e2 html #0: ok
+[16/36] prism-ml/bonsai-27b error-state.e2 html #2: ok
+[17/36] prism-ml/bonsai-27b error-state.e2 jsx #0: ok
+[18/36] prism-ml/bonsai-27b error-state.e2 weft #1: ok
+[19/36] prism-ml/bonsai-27b error-state.e2 jsx #1: ok
+[20/36] prism-ml/bonsai-27b error-state.e2 weft #2: ok
+[21/36] prism-ml/bonsai-27b error-state.e2 jsx #2: ok
+[22/36] prism-ml/bonsai-27b error-state.e3 weft #0: ok
+[23/36] prism-ml/bonsai-27b error-state.e2 a2ui #0: ok
+[24/36] prism-ml/bonsai-27b error-state.e2 a2ui #1: ok
+[25/36] prism-ml/bonsai-27b error-state.e2 a2ui #2: ok
+[26/36] prism-ml/bonsai-27b error-state.e3 weft #2: ok
+[27/36] prism-ml/bonsai-27b error-state.e3 html #1: ok
+[28/36] prism-ml/bonsai-27b error-state.e3 weft #1: ok
+[29/36] prism-ml/bonsai-27b error-state.e3 jsx #1: FAIL
+[30/36] prism-ml/bonsai-27b error-state.e3 jsx #0: FAIL
+[31/36] prism-ml/bonsai-27b error-state.e3 html #2: ok
+[32/36] prism-ml/bonsai-27b error-state.e3 html #0: ok
+[33/36] prism-ml/bonsai-27b error-state.e3 jsx #2: FAIL
+[34/36] prism-ml/bonsai-27b error-state.e3 a2ui #1: ok
+[35/36] prism-ml/bonsai-27b error-state.e3 a2ui #2: ok
+[36/36] prism-ml/bonsai-27b error-state.e3 a2ui #0: ok
+## edit run
+
+Rates are means over all samples; the range is the lowest and highest single-sample rate.
+
+| Model | Format | Tasks | Samples | Valid | Valid after repair | Success | Success after repair | Mean output tokens |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| prism-ml/bonsai-27b | weft | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 171 |
+| prism-ml/bonsai-27b | html | 3 | 3 | 100.0% | 100.0% | 100.0% | 100.0% | 147 |
+| prism-ml/bonsai-27b | jsx | 3 | 3 | 100.0% | 100.0% | 44.4% (33.3%–66.7%) | 44.4% (33.3%–66.7%) | 165 |
+| prism-ml/bonsai-27b | a2ui | 3 | 3 | 100.0% | 100.0% | 66.7% | 66.7% | 608 |
+

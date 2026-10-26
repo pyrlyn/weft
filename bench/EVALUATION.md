@@ -2,13 +2,49 @@
 
 Translations: [Russian](../docs/ru/evaluation.md), [Ukrainian](../docs/uk/evaluation.md).
 
-Report for T8, written 2026-10-09 from the runs already in [`test.md`](../test.md). It does not close T8. The final measurement is a three-sample edit run and a three-sample read run on the current harness (Rust core, T25 checkers, replies saved). Those runs have not been executed: no `ANTHROPIC_API_KEY` is set here, and no LM Studio server is listening.
+Report for T8, first written 2026-10-09, revised 2026-10-26 with the final runs. By the creator's scope change, the one local model, `prism-ml/bonsai-27b` in LM Studio, measured against the baselines, is enough; the Claude runs are no longer required. The final runs miss the first-try bar by 0.6 points, so T8 stays open.
 
 ## Criteria
 
 Weft must reach at least 95% validity on the first try and at least 99% after one repair cycle. Success, output size and the gap to HTML, JSX and A2UI inform the continue/stop recommendation. Raw results must be in the repository. They are, under `bench/results/`.
 
-## What was measured
+## Final runs (2026-10-25/26)
+
+LM Studio, `prism-ml/bonsai-27b` (32k context, 4 parallel slots), the current harness (Rust core, T25 checkers, one repair cycle, replies saved), commit `d0aa14cf`, three samples, every task and format, no readback turn. The first full edit run stopped after 57 of 432 samples when LM Studio's model process crashed (`bench/results/edit-2026-10-25T17-48-11-985Z.*`), so both runs were made one screen at a time: twelve edit files (`edit-2026-10-25T19-49-32-893Z` to `edit-2026-10-26T04-39-24-874Z`) and twelve read files (`read-2026-10-26T05-12-18-880Z` to `read-2026-10-26T06-35-12-873Z`), with the same tasks, prompts and checks as a single run; no screen needed a retry. Logs: `bench/results/edit-bonsai-t8.log`, `bench/results/read-bonsai-t8.log`. One history row per file in `test.md`. The tables below combine the files with the harness's own `summarize`.
+
+Edit, 36 tasks, 432 samples:
+
+| Format | Valid | Valid after repair | Success | Success after repair | Mean output tokens |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Weft | 94.4% | 100.0% | 87.0% (86.1–88.9%) | 91.7% (88.9–94.4%) | 247 |
+| HTML | 99.1% (97.2–100%) | 100.0% | 98.1% (94.4–100%) | 99.1% (97.2–100%) | 254 |
+| JSX | 100.0% | 100.0% | 86.1% (83.3–88.9%) | 86.1% (83.3–88.9%) | 293 |
+| A2UI | 100.0% | 100.0% | 93.5% (88.9–97.2%) | 93.5% (88.9–97.2%) | 831 |
+
+Read, 24 questions, 288 samples:
+
+| Format | Answered right | Mean output tokens |
+| --- | ---: | ---: |
+| Weft | 98.6% (95.8–100%) | 8 |
+| HTML | 100.0% | 8 |
+| JSX | 100.0% | 9 |
+| A2UI | 94.4% (91.7–95.8%) | 8 |
+
+Against the bar: Weft first-try validity is 94.4% (102 of 108), below 95%; validity after one repair is 100%, above 99%.
+
+### Weft failures
+
+- **Invalid on the first try (6 of 108), all fixed by the one repair.** Three are W116, a brace value that is not one whole reference: an unclosed `value="{$.phone"` (`signup.e1`), a padded `disabled="{ $todo.locked }"` (`todo-list.e2`) and `disabled="{!.signingOut}"` (`menu.e2`). One is W305, `disabled="{$signingOut}"`, a data path written as a loop variable (`menu.e2`). Two are on `todo-list.e3`: an event named `change` where the checkbox's event is `on-change` (W402), and a stray `; change` in the attribute list (W101, W105, W107).
+- **Valid but wrong after repair (9 of 108), one class.** Every miss is a `disabled` binding written with a negation the task does not ask for: `{!$.busy}`, `{!$.saving}`, `{!$todo.locked}`, `{!$.signingOut}` (`login.e2` ×2, `settings.e3`, `confirm-dialog.e3`, `todo-list.e2`, `profile.e3` ×2, `menu.e2` ×2). Four of the six screens already carry a negated `disabled` (`{!$.email}`, `{!$.dirty}`, `{!$.draft}`, `{!$.isOwner}`), and the model carries the `!` over. Repair cannot see it, since the markup is valid. This is the class T28's readback turn targets; on the login trial (`test.md`, 2026-10-09) the readback fixed it.
+- **Read:** one wrong answer in 72 (`menu.q1`, sample 1).
+
+### Baseline failures, in short
+
+- **JSX** is always valid and loses on success: 15 misses, on the same `disabled` edits as Weft (`login.e2` ×3, `settings.e3` ×2, `profile.e3`) and on placement edits (`search-results.e2` ×3, `error-state.e1` ×2, `error-state.e3` ×3, `login.e1`).
+- **A2UI** is always valid and the most verbose (831 output tokens against 247 for Weft); 7 edit misses (`error-state.e1` ×3, `search-results.e1` ×2, `search-results.e3`, `profile.e1`) and 4 wrong answers (`settings.q2` ×3, `login.q1`).
+- **HTML** is the strongest baseline on this model: one edit miss (`confirm-dialog.e3`) and every answer right.
+
+## Earlier runs
 
 | Run | Samples | Replies saved | Weft valid / after repair / success | Notes |
 | --- | ---: | --- | --- | --- |
@@ -25,7 +61,7 @@ Mean output tokens on that run, from the summary:
 | claude-opus-5-5 | 346 | 334 | 409 | 977 |
 | claude-haiku-4-5-20251001 | 264 | 276 | 321 | 863 |
 
-## Failures
+### Failures in the earlier runs
 
 Eight results failed, all of them baselines, all of them valid:
 
@@ -37,9 +73,17 @@ Weft had no failure in that file. The Bonsai smoke run did: `login.e2` changed `
 
 ## Recommendation
 
-Continue. On the only full edit run, Weft is at 100% first-try validity and 100% after repair, above the 95% and 99% bars, with success at 100% against baselines at 94.4–100%, and with output closer to HTML than to A2UI. That is not a reason to stop.
+Continue, and keep T8 open.
 
-It is also not a reason to close T8. The run has one sample, saved no replies, predates the T25 answer rule and the Rust core the final runs are supposed to use, and the matching read run never finished. Repeat the edit and read runs at three samples on the current harness, keep the replies, add the history rows, and revise this report. Until then the numeric bar is met only by the earlier measurement.
+On the final runs, Weft meets the repair bar (100% valid after one repair, bar 99%) and misses the first-try bar by 0.6 points (94.4%, bar 95%): six of 108 replies, each a one-attribute slip that the diagnostic named and one repair fixed. Its replies are the shortest of the four formats (247 output tokens; HTML 254, JSX 293, A2UI 831). Edit success after repair, 91.7%, is above JSX (86.1%), near A2UI (93.5%) and below HTML (99.1%), and every Weft miss is one class: a negation carried into a `disabled` binding, which JSX misses on the same tasks. Reading is at 98.6%. Nothing here is a reason to stop.
+
+It is not a pass either: by the numeric bar, T8 does not close on this run. What would move the numbers, for the creator to choose:
+
+- An edit run with `--readback` (T28), which targets the one class of valid-but-wrong edits; it changes success, not first-try validity.
+- The first-try misses are malformed references (W116, W305) and an event name (W402). Whether the primer should say more about them is a method change, recorded in `test.md` before any rerun.
+- A plain rerun is unlikely to cross the bar: each of the three samples sits at exactly 94.4% (two invalid replies out of 36).
+
+The Claude runs of the original plan are not part of the decision any more (scope change); the 2026-10-03 one-sample run on three Claude models (100% / 100%) stays below as an earlier measurement.
 
 ## Constrained generation (T12.3)
 
