@@ -31,7 +31,10 @@ final class WeftStudioUITests: XCTestCase {
         XCTAssertTrue(surface.waitForExistence(timeout: 30), "no surface in the window")
         XCTAssertTrue(waitUntil(timeout: 30) { colours(in: surface.screenshot().image) > 1 }, "the surface is one colour")
 
-        window.typeKey("s", modifierFlags: [.command, .shift])
+        // Through the menu, not ⌘⇧S: `typeKey` types the character in the current input source,
+        // and with a non-Latin one (Russian) the shortcut never reaches the app (T903).
+        app.menuBars.menuBarItems["File"].click()
+        app.menuBars.menuItems["Save As…"].click()
         XCTAssertTrue(waitUntil(timeout: 30) { FileManager.default.fileExists(atPath: copy.path) }, "Save As wrote nothing")
         XCTAssertEqual(try Data(contentsOf: copy), try Data(contentsOf: login))
         let renamed = app.windows.matching(NSPredicate(format: "title == %@", "copy.weft")).firstMatch
