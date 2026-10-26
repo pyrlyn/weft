@@ -11,6 +11,7 @@ An open, agent-friendly UI description format — strict markup for models, cano
 | T69 | todo | P2 | 5 | 0% | |
 | T106 | in progress | P2 | 5 | 95% | Claude Code / claude-opus-5-5 |
 | T106.7 | in progress | P2 | 4 | 95% | Claude Code / claude-opus-5-5 |
+| T903 | in progress | P2 | 2 | 90% | Claude Code / claude-opus-5-5 |
 
 ### T8. Evaluation
 
@@ -151,3 +152,15 @@ What exists (checked on origin/main): the MCP server is `packages/mcp` (nine too
 The coding agent tasks the T106.6 proposal defines, as built: T33.47.1–T33.47.10 in pyrlyn/cox (`docs/design/plugin-canvas.md`, A156, branch `t33.47-plugin-canvas`); the coding agent's A157 split T33.47.8 into T33.47.8.1–T33.47.8.10, one layer each, and added T33.47.10, a fix. They cover the plugin-API types, manifest key and grant line, the host calls and SDK arms, the `cox-app` state, wire and FFI, the isolated `CanvasPage`, the pane, its shortcut and palette rows, and the user docs. Done when their checks pass in the coding agent and the branch is pushed. The Weft plugin's `cox-plugin-sdk` pin moves to that branch in T106.8.
 
 Status: every coding agent card is done and pushed (branch head `fd35f0d0`) but T33.47.8's last checks: by hand, ⌘⇧D and the palette row toggle the pane, two frames show, and a click adds a chip that a second click replaces; and the falsifier 3 measurement in Instruments. Both need a person at the app, so they are with the creator.
+
+### T903. macOS studio UI test: Save As writes nothing locally
+
+Seen by both loop workers: locally, the macOS `studio:test` XCUITest fails with "Save As wrote nothing", while the same test passes in CI. Find the cause (likely focus or timing around the save panel, as T902 found for Windows) and fix it, starting from a reproduction. Done when the test passes locally several runs in a row and stays green in CI. Needs a Mac with Xcode, so it cannot run in a Linux cloud session.
+
+Execution plan:
+
+1. Reproduce: XcodeGen, then `xcodebuild test` of `studio/macos` with a result bundle, and read the failing run's screenshots and the app's state at ⌘⇧S.
+2. Find the cause in `studio/macos/App` or `studio/macos/UITests` and fix it at that layer, without a longer timeout as the fix.
+3. Verify: the UI test passes locally five runs in a row, then `moon run studio:test` and CI on the PR.
+
+Progress: the cause is found and fixed. `typeKey("s", modifierFlags: [.command, .shift])` types the character `s` in the current input source; on the creator's Mac that is Russian, which has no `s` key, so ⌘⇧S never reached the File menu. CI runs with the US layout. The UI test now opens File and clicks `Save As…`. Before the fix the test failed locally; after it, `xcodebuild test` of `studio/macos` passed five runs in a row on the same Mac with the Russian layout. Remaining: CI. The macOS `gate` job stops at its `jactionlint` step before any test, on main too (`unpinned-uses` on `pyrlyn/ci/...@main` in `ci.yml` and `pipeline.yml`), so `studio:test` has not run in CI yet; T903 closes once it runs green there.
