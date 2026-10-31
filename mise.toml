@@ -12,7 +12,7 @@ rust = { version = "1.99.0", components = "rustfmt,clippy", targets = "wasm32-un
 # No core mise plugin for moon; aqua installs the prebuilt release.
 "aqua:moonrepo/moon" = "2.5.6"
 deno = "2.9.7"
-bun = "1.4.2"
+bun = "1.4.4"
 # Runs the Rust tests; no aqua package, so cargo builds or binstalls it.
 "cargo:cargo-nextest" = "0.9.143"
 "aqua:rustwasm/wasm-pack" = "0.15.0"
